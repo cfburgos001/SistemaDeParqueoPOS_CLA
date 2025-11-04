@@ -108,12 +108,12 @@ object PrinterManager {
         out.write(byteArrayOf(0x1B, 0x45, 0x00)) // Negrita OFF
         out.write("\n".utf8())
 
-        // ===== CÓDIGO QR SIMULADO =====
-        out.write(simulatedQR(data.uniqueId).utf8())
+        // ===== CÓDIGO QR SIMULADO (mejorado para térmicas) =====
+        out.write(simulatedQR(data.plate).utf8())
         out.write("\n".utf8())
 
         out.write(byteArrayOf(0x1B, 0x45, 0x01)) // Negrita ON
-        out.write("ID: ${data.uniqueId}\n".utf8())
+        out.write("ESCANEE PARA SALIDA\n".utf8())
         out.write(byteArrayOf(0x1B, 0x45, 0x00)) // Negrita OFF
         out.write("\n".utf8())
 
@@ -132,6 +132,7 @@ object PrinterManager {
         out.write("FECHA:  ${dateFormatter.format(data.entryTime)}\n".utf8())
         out.write("HORA:   ${timeFormatter.format(data.entryTime)}\n".utf8())
         out.write("\n".utf8())
+        out.write("ID: ${data.uniqueId}\n".utf8())
 
         // ===== FOOTER =====
         out.write("--------------------------------\n".utf8())
@@ -152,27 +153,46 @@ object PrinterManager {
     /**
      * Genera un código QR ASCII simulado
      */
-    private fun simulatedQR(seed: String, size: Int = 17): String {
-        val random = Random(seed.hashCode().toLong())
+    private fun simulatedQR(plateData: String, size: Int = 15): String {
+        val random = Random(plateData.hashCode().toLong())
         val sb = StringBuilder()
 
-        // Borde superior
-        sb.appendLine("  ╔" + "█".repeat(size) + "╗")
+        // Usar caracteres ASCII simples compatibles con térmicas
+        val block = "#"  // Bloque lleno
+        val empty = " "  // Espacio vacío
+        val border = "+"  // Borde
 
-        // Contenido del QR
-        repeat(size) {
-            sb.append("  █")
-            repeat(size) {
-                sb.append(if (random.nextBoolean()) "█" else " ")
+        // Borde superior
+        sb.append("  ")
+        sb.append(border)
+        sb.append(border.repeat(size))
+        sb.appendLine(border)
+
+        // Contenido del QR (patrón basado en la placa)
+        repeat(size) { row ->
+            sb.append("  $border")
+            repeat(size) { col ->
+                // Crear un patrón más definido basado en la placa
+                val shouldFill = when {
+                    // Bordes internos del QR
+                    row < 3 || row >= size - 3 -> (col < 3 || col >= size - 3)
+                    // Patrón aleatorio en el medio
+                    else -> random.nextBoolean()
+                }
+                sb.append(if (shouldFill) block else empty)
             }
-            sb.appendLine("█")
+            sb.appendLine(border)
         }
 
         // Borde inferior
-        sb.append("  ╚" + "█".repeat(size) + "╝")
+        sb.append("  ")
+        sb.append(border)
+        sb.append(border.repeat(size))
+        sb.append(border)
 
         return sb.toString()
     }
+
 
     /**
      * Construye el texto del recibo para mostrar en pantalla
@@ -187,9 +207,9 @@ object PrinterManager {
             appendLine("   SISTEMA DE PARQUEO")
             appendLine("================================")
             appendLine()
-            appendLine(simulatedQR(data.uniqueId, 13))
+            appendLine(simulatedQR(data.plate, 11))
             appendLine()
-            appendLine("ID: ${data.uniqueId}")
+            appendLine("   ESCANEE PARA SALIDA")
             appendLine()
             appendLine("--------------------------------")
             appendLine("PLACA:  ${data.plate}")
@@ -197,12 +217,14 @@ object PrinterManager {
             appendLine("FECHA:  ${dateFormatter.format(data.entryTime)}")
             appendLine("HORA:   ${timeFormatter.format(data.entryTime)}")
             appendLine()
+            appendLine("ID: ${data.uniqueId}")
             appendLine("--------------------------------")
             appendLine("   CONSERVE ESTE TICKET")
             appendLine("      PARA SU SALIDA")
             appendLine("================================")
         }
     }
+
 
     /**
      * Muestra el recibo en un Toast cuando no se puede imprimir
