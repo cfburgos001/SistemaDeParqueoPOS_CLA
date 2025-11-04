@@ -2,21 +2,21 @@
 <menu xmlns:android="http://schemas.android.com/apk/res/android">
     <item
         android:id="@+id/nav_home"
-        android:icon="@android:drawable/ic_menu_home"
+        android:icon="@drawable/ic_home"
         android:title="Inicio" />
 
     <item
         android:id="@+id/nav_ingreso"
-        android:icon="@android:drawable/ic_input_add"
+        android:icon="@drawable/ic_entry"
         android:title="Entrada" />
 
     <item
         android:id="@+id/nav_salida"
-        android:icon="@android:drawable/ic_menu_revert"
+        android:icon="@drawable/ic_exit"
         android:title="Salida" />
 
     <item
         android:id="@+id/nav_mantenimiento"
-        android:icon="@android:drawable/ic_menu_manage"
+        android:icon="@drawable/ic_settings"
         android:title="Mantenimiento" />
 </menu>
