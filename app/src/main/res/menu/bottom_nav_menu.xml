@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android">
+    <item
+        android:id="@+id/nav_home"
+        android:icon="@android:drawable/ic_menu_home"
+        android:title="Inicio" />
+
+    <item
+        android:id="@+id/nav_ingreso"
+        android:icon="@android:drawable/ic_input_add"
+        android:title="Entrada" />
+
+    <item
+        android:id="@+id/nav_salida"
+        android:icon="@android:drawable/ic_menu_revert"
+        android:title="Salida" />
+
+    <item
+        android:id="@+id/nav_mantenimiento"
+        android:icon="@android:drawable/ic_menu_manage"
+        android:title="Mantenimiento" />
+</menu>
