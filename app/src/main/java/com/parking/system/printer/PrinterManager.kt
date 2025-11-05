@@ -12,29 +12,19 @@ import java.text.SimpleDateFormat
 import java.util.*
 
 /**
- * Manager para impresión Bluetooth en impresoras térmicas compatibles con ESC/POS
- * Optimizado para Terminal ZKH300 y sistema de parqueo
+ * Manager para impresión Bluetooth - Versión compatible con todas las térmicas
+ * Ticket compacto con información clara
  */
 @SuppressLint("MissingPermission")
 object PrinterManager {
 
-    // ⚠️ IMPORTANTE: Reemplaza con la dirección MAC real de tu impresora
-    // Formato: "AA:BB:CC:DD:EE:FF"
-    // Puedes encontrarla en: Configuración > Bluetooth > Dispositivos emparejados
     private const val PRINTER_MAC = "66:11:22:33:44:55"
-
-    // UUID estándar para comunicación serial Bluetooth (SPP)
     private val SPP_UUID: UUID = UUID.fromString("00001101-0000-1000-8000-00805F9B34FB")
 
-    /**
-     * Obtiene el dispositivo Bluetooth de la impresora
-     */
     private fun getDevice(): BluetoothDevice? {
         return try {
             val adapter = BluetoothAdapter.getDefaultAdapter()
-            if (adapter == null || !adapter.isEnabled) {
-                return null
-            }
+            if (adapter == null || !adapter.isEnabled) return null
             adapter.getRemoteDevice(PRINTER_MAC)
         } catch (e: Exception) {
             e.printStackTrace()
@@ -42,9 +32,6 @@ object PrinterManager {
         }
     }
 
-    /**
-     * Imprime el recibo de entrada de vehículo
-     */
     fun printReceipt(context: Context, data: ReceiptData) {
         val fallbackText = buildReceiptText(data)
 
@@ -56,15 +43,13 @@ object PrinterManager {
             }
 
             val adapter = BluetoothAdapter.getDefaultAdapter()
-            adapter?.cancelDiscovery() // Detener búsqueda para mejorar conexión
+            adapter?.cancelDiscovery()
 
-            // Intentar conexión segura primero
             val socket = try {
                 val socketSafe = device.createRfcommSocketToServiceRecord(SPP_UUID)
                 socketSafe.connect()
                 socketSafe
             } catch (e1: Exception) {
-                // Si falla, intentar conexión insegura (común en térmicas antiguas)
                 try {
                     val insecure = device.createInsecureRfcommSocketToServiceRecord(SPP_UUID)
                     insecure.connect()
@@ -76,190 +61,142 @@ object PrinterManager {
             }
 
             val outputStream: OutputStream = socket.outputStream
-
-            // Enviar comandos ESC/POS a la impresora
             sendEscPosPrint(outputStream, data)
-
             outputStream.flush()
             socket.close()
 
-            Toast.makeText(context, "✓ Recibo impreso correctamente", Toast.LENGTH_SHORT).show()
+            Toast.makeText(context, "✓ Ticket impreso", Toast.LENGTH_SHORT).show()
 
         } catch (e: Exception) {
             e.printStackTrace()
-            showFallback(context, fallbackText, "Error al imprimir: ${e.message}")
+            showFallback(context, fallbackText, "Error: ${e.message}")
         }
     }
 
     /**
-     * Envía comandos ESC/POS para imprimir el ticket
+     * Imprime ticket compacto solo con texto
      */
     private fun sendEscPosPrint(out: OutputStream, data: ReceiptData) {
-        // Inicializar impresora
+        // Inicializar
         out.write(byteArrayOf(0x1B, 0x40))
 
-        // ===== ENCABEZADO =====
-        out.write(byteArrayOf(0x1B, 0x61, 0x01)) // Centrar texto
-        out.write(byteArrayOf(0x1B, 0x45, 0x01)) // Negrita ON
-        out.write("================================\n".utf8())
-        out.write("   RECIBO DE INGRESO\n".utf8())
-        out.write("   SISTEMA DE PARQUEO\n".utf8())
-        out.write("================================\n".utf8())
-        out.write(byteArrayOf(0x1B, 0x45, 0x00)) // Negrita OFF
+        // Encabezado
+        out.write(byteArrayOf(0x1B, 0x61, 0x01)) // Centrar
+        out.write(byteArrayOf(0x1B, 0x45, 0x01)) // Negrita
+        out.write("SISTEMA DE PARQUEO\n".utf8())
+        out.write("TICKET DE INGRESO\n".utf8())
+        out.write(byteArrayOf(0x1B, 0x45, 0x00))
+        out.write("========================\n".utf8())
         out.write("\n".utf8())
 
-        // ===== CÓDIGO QR SIMULADO (mejorado para térmicas) =====
-        out.write(simulatedQR(data.plate).utf8())
+        // Código de barras visual (más confiable que QR para estas impresoras)
+        out.write(generateBarcodeText(data.plate).utf8())
         out.write("\n".utf8())
 
-        out.write(byteArrayOf(0x1B, 0x45, 0x01)) // Negrita ON
-        out.write("ESCANEE PARA SALIDA\n".utf8())
-        out.write(byteArrayOf(0x1B, 0x45, 0x00)) // Negrita OFF
-        out.write("\n".utf8())
-
-        // ===== INFORMACIÓN DEL VEHÍCULO =====
-        out.write(byteArrayOf(0x1B, 0x61, 0x00)) // Alinear a la izquierda
-        out.write("--------------------------------\n".utf8())
+        // Información principal
+        out.write(byteArrayOf(0x1B, 0x61, 0x00)) // Izquierda
 
         val dateFormatter = SimpleDateFormat("dd/MM/yyyy", Locale.getDefault())
         val timeFormatter = SimpleDateFormat("HH:mm:ss", Locale.getDefault())
 
-        out.write(byteArrayOf(0x1B, 0x45, 0x01)) // Negrita ON
-        out.write("PLACA:  ${data.plate}\n".utf8())
-        out.write(byteArrayOf(0x1B, 0x45, 0x00)) // Negrita OFF
+        out.write(byteArrayOf(0x1B, 0x45, 0x01)) // Negrita
+        out.write("PLACA: ${data.plate}\n".utf8())
+        out.write(byteArrayOf(0x1B, 0x45, 0x00))
 
         out.write("\n".utf8())
-        out.write("FECHA:  ${dateFormatter.format(data.entryTime)}\n".utf8())
-        out.write("HORA:   ${timeFormatter.format(data.entryTime)}\n".utf8())
+        out.write("FECHA: ${dateFormatter.format(data.entryTime)}\n".utf8())
+        out.write("HORA:  ${timeFormatter.format(data.entryTime)}\n".utf8())
         out.write("\n".utf8())
         out.write("ID: ${data.uniqueId}\n".utf8())
 
-        // ===== FOOTER =====
-        out.write("--------------------------------\n".utf8())
+        // Footer
+        out.write("========================\n".utf8())
         out.write(byteArrayOf(0x1B, 0x61, 0x01)) // Centrar
-        out.write(byteArrayOf(0x1B, 0x45, 0x01)) // Negrita ON
+        out.write(byteArrayOf(0x1B, 0x45, 0x01))
         out.write("CONSERVE ESTE TICKET\n".utf8())
         out.write("PARA SU SALIDA\n".utf8())
-        out.write(byteArrayOf(0x1B, 0x45, 0x00)) // Negrita OFF
-        out.write("================================\n".utf8())
+        out.write(byteArrayOf(0x1B, 0x45, 0x00))
+        out.write("========================\n".utf8())
 
-        // Saltos de línea finales
         out.write("\n\n\n".utf8())
 
-        // Corte de papel (si la impresora lo soporta)
-        out.write(byteArrayOf(0x1D, 0x56, 0x01)) // Corte parcial
+        // Corte
+        out.write(byteArrayOf(0x1D, 0x56, 0x01))
     }
 
     /**
-     * Genera un código QR ASCII simulado
+     * Genera un código de barras ASCII visual
+     * Más confiable que QR para impresoras básicas
      */
-    private fun simulatedQR(plateData: String, size: Int = 15): String {
-        val random = Random(plateData.hashCode().toLong())
+    private fun generateBarcodeText(plate: String): String {
         val sb = StringBuilder()
 
-        // Usar caracteres ASCII simples compatibles con térmicas
-        val block = "#"  // Bloque lleno
-        val empty = " "  // Espacio vacío
-        val border = "+"  // Borde
+        // Título
+        sb.appendLine("  CODIGO DE VEHICULO:")
+        sb.appendLine()
 
-        // Borde superior
+        // Barras verticales para cada carácter de la placa
         sb.append("  ")
-        sb.append(border)
-        sb.append(border.repeat(size))
-        sb.appendLine(border)
-
-        // Contenido del QR (patrón basado en la placa)
-        repeat(size) { row ->
-            sb.append("  $border")
-            repeat(size) { col ->
-                // Crear un patrón más definido basado en la placa
-                val shouldFill = when {
-                    // Bordes internos del QR
-                    row < 3 || row >= size - 3 -> (col < 3 || col >= size - 3)
-                    // Patrón aleatorio en el medio
-                    else -> random.nextBoolean()
-                }
-                sb.append(if (shouldFill) block else empty)
-            }
-            sb.appendLine(border)
+        for (char in plate) {
+            val hash = char.hashCode() % 5 + 3 // 3-7 barras por carácter
+            sb.append("|".repeat(hash))
+            sb.append(" ")
         }
+        sb.appendLine()
 
-        // Borde inferior
+        // Placa legible debajo
         sb.append("  ")
-        sb.append(border)
-        sb.append(border.repeat(size))
-        sb.append(border)
+        for (char in plate) {
+            sb.append(" $char ")
+        }
+        sb.appendLine()
+
+        // Línea de separación
+        sb.append("  ")
+        sb.append("-".repeat(plate.length * 3))
 
         return sb.toString()
     }
 
-
-    /**
-     * Construye el texto del recibo para mostrar en pantalla
-     */
     private fun buildReceiptText(data: ReceiptData): String {
-        val dateFormatter = SimpleDateFormat("dd/MM/yyyy", Locale.getDefault())
-        val timeFormatter = SimpleDateFormat("HH:mm:ss", Locale.getDefault())
-
+        val dateFormatter = SimpleDateFormat("dd/MM/yyyy HH:mm:ss", Locale.getDefault())
         return buildString {
-            appendLine("================================")
-            appendLine("   RECIBO DE INGRESO")
-            appendLine("   SISTEMA DE PARQUEO")
-            appendLine("================================")
+            appendLine("SISTEMA DE PARQUEO")
+            appendLine("TICKET DE INGRESO")
+            appendLine("========================")
             appendLine()
-            appendLine(simulatedQR(data.plate, 11))
+            appendLine(generateBarcodeText(data.plate))
             appendLine()
-            appendLine("   ESCANEE PARA SALIDA")
+            appendLine("PLACA: ${data.plate}")
             appendLine()
-            appendLine("--------------------------------")
-            appendLine("PLACA:  ${data.plate}")
-            appendLine()
-            appendLine("FECHA:  ${dateFormatter.format(data.entryTime)}")
-            appendLine("HORA:   ${timeFormatter.format(data.entryTime)}")
+            appendLine("FECHA/HORA:")
+            appendLine(dateFormatter.format(data.entryTime))
             appendLine()
             appendLine("ID: ${data.uniqueId}")
-            appendLine("--------------------------------")
-            appendLine("   CONSERVE ESTE TICKET")
-            appendLine("      PARA SU SALIDA")
-            appendLine("================================")
+            appendLine("========================")
+            appendLine("CONSERVE ESTE TICKET")
+            appendLine("PARA SU SALIDA")
+            appendLine("========================")
         }
     }
 
-
-    /**
-     * Muestra el recibo en un Toast cuando no se puede imprimir
-     */
     private fun showFallback(context: Context, text: String, reason: String) {
-        Toast.makeText(
-            context,
-            "$reason\n\nRecibo generado:\n\n$text",
-            Toast.LENGTH_LONG
-        ).show()
+        Toast.makeText(context, "$reason\n\n$text", Toast.LENGTH_LONG).show()
     }
 
-    /**
-     * Verifica si el Bluetooth está habilitado
-     */
     fun isBluetoothEnabled(): Boolean {
         val adapter = BluetoothAdapter.getDefaultAdapter()
         return adapter != null && adapter.isEnabled
     }
 
-    /**
-     * Verifica si la impresora está emparejada
-     */
     fun isPrinterPaired(context: Context): Boolean {
         return try {
             val adapter = BluetoothAdapter.getDefaultAdapter() ?: return false
-            val pairedDevices = adapter.bondedDevices
-            pairedDevices.any { it.address == PRINTER_MAC }
+            adapter.bondedDevices.any { it.address == PRINTER_MAC }
         } catch (e: Exception) {
             false
         }
     }
 
-    /**
-     * Extension para convertir String a ByteArray UTF-8
-     */
     private fun String.utf8(): ByteArray = toByteArray(Charset.forName("UTF-8"))
 }
