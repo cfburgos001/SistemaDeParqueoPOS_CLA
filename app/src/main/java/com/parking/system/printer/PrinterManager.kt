@@ -11,10 +11,6 @@ import java.nio.charset.Charset
 import java.text.SimpleDateFormat
 import java.util.*
 
-/**
- * Manager para impresión Bluetooth - Versión compatible con todas las térmicas
- * Ticket compacto con información clara
- */
 @SuppressLint("MissingPermission")
 object PrinterManager {
 
@@ -74,7 +70,7 @@ object PrinterManager {
     }
 
     /**
-     * Imprime ticket compacto solo con texto
+     * Imprime ticket con CODE128
      */
     private fun sendEscPosPrint(out: OutputStream, data: ReceiptData) {
         // Inicializar
@@ -89,8 +85,8 @@ object PrinterManager {
         out.write("========================\n".utf8())
         out.write("\n".utf8())
 
-        // Código de barras visual (más confiable que QR para estas impresoras)
-        out.write(generateBarcodeText(data.plate).utf8())
+        // CODE128 - ESCANEABLE
+        printBarcode128(out, data.plate)
         out.write("\n".utf8())
 
         // Información principal
@@ -125,37 +121,38 @@ object PrinterManager {
     }
 
     /**
-     * Genera un código de barras ASCII visual
-     * Más confiable que QR para impresoras básicas
+     * Imprime CODE128 usando comandos ESC/POS
      */
-    private fun generateBarcodeText(plate: String): String {
-        val sb = StringBuilder()
+    private fun printBarcode128(out: OutputStream, data: String) {
+        try {
+            // Centrar código de barras
+            out.write(byteArrayOf(0x1B, 0x61, 0x01))
 
-        // Título
-        sb.appendLine("  CODIGO DE VEHICULO:")
-        sb.appendLine()
+            // GS H - Posición del texto HRI (abajo)
+            out.write(byteArrayOf(0x1D, 0x48, 0x02))
 
-        // Barras verticales para cada carácter de la placa
-        sb.append("  ")
-        for (char in plate) {
-            val hash = char.hashCode() % 5 + 3 // 3-7 barras por carácter
-            sb.append("|".repeat(hash))
-            sb.append(" ")
+            // GS h - Altura del código de barras (60 puntos)
+            out.write(byteArrayOf(0x1D, 0x68, 0x3C))
+
+            // GS w - Ancho del código de barras (3 = mediano)
+            out.write(byteArrayOf(0x1D, 0x77, 0x03))
+
+            // GS k - Imprimir código de barras CODE128
+            // Formato: GS k 73 n [datos]
+            out.write(0x1D) // GS
+            out.write(0x6B) // k
+            out.write(0x49) // CODE128 (73 = 0x49)
+            out.write(data.length) // Longitud
+            out.write(data.utf8()) // Datos
+
+            out.write("\n".utf8())
+
+            // Volver a alinear izquierda
+            out.write(byteArrayOf(0x1B, 0x61, 0x00))
+
+        } catch (e: Exception) {
+            e.printStackTrace()
         }
-        sb.appendLine()
-
-        // Placa legible debajo
-        sb.append("  ")
-        for (char in plate) {
-            sb.append(" $char ")
-        }
-        sb.appendLine()
-
-        // Línea de separación
-        sb.append("  ")
-        sb.append("-".repeat(plate.length * 3))
-
-        return sb.toString()
     }
 
     private fun buildReceiptText(data: ReceiptData): String {
@@ -165,17 +162,15 @@ object PrinterManager {
             appendLine("TICKET DE INGRESO")
             appendLine("========================")
             appendLine()
-            appendLine(generateBarcodeText(data.plate))
+            appendLine("[CODE128: ${data.plate}]")
             appendLine()
             appendLine("PLACA: ${data.plate}")
             appendLine()
-            appendLine("FECHA/HORA:")
             appendLine(dateFormatter.format(data.entryTime))
             appendLine()
             appendLine("ID: ${data.uniqueId}")
             appendLine("========================")
             appendLine("CONSERVE ESTE TICKET")
-            appendLine("PARA SU SALIDA")
             appendLine("========================")
         }
     }

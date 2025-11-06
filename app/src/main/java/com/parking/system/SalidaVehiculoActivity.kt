@@ -42,7 +42,7 @@ class SalidaVehiculoActivity : AppCompatActivity() {
         }
 
         binding.btnEscanearQR.setOnClickListener {
-            iniciarEscaneoQR()
+            iniciarEscaner()
         }
 
         binding.etPlaca.addTextChangedListener { text ->
@@ -58,10 +58,16 @@ class SalidaVehiculoActivity : AppCompatActivity() {
         }
     }
 
-    private fun iniciarEscaneoQR() {
+    private fun iniciarEscaner() {
         val integrator = IntentIntegrator(this)
-        integrator.setDesiredBarcodeFormats(IntentIntegrator.QR_CODE)
-        integrator.setPrompt("Escanee el código QR del ticket")
+
+        // IMPORTANTE: Aceptar QR y CODE128
+        integrator.setDesiredBarcodeFormats(
+            IntentIntegrator.QR_CODE,
+            IntentIntegrator.CODE_128
+        )
+
+        integrator.setPrompt("Escanee el código del ticket")
         integrator.setCameraId(0)
         integrator.setBeepEnabled(true)
         integrator.setBarcodeImageEnabled(true)
@@ -76,29 +82,42 @@ class SalidaVehiculoActivity : AppCompatActivity() {
             if (result.contents == null) {
                 Toast.makeText(this, "Escaneo cancelado", Toast.LENGTH_SHORT).show()
             } else {
-                val qrContent = result.contents
-                procesarSalida(null, qrContent)
+                val codigoEscaneado = result.contents
+                val tipoFormato = result.formatName
+
+                Toast.makeText(
+                    this,
+                    "Escaneado: $tipoFormato\nCódigo: $codigoEscaneado",
+                    Toast.LENGTH_SHORT
+                ).show()
+
+                // Procesar la salida con el código escaneado
+                procesarSalida(codigoEscaneado, tipoFormato)
             }
         } else {
             super.onActivityResult(requestCode, resultCode, data)
         }
     }
 
-    private fun procesarSalida(placa: String?, qrId: String?) {
-        val mensaje = when {
-            placa != null -> "Procesando salida de vehículo con placa: $placa"
-            qrId != null -> "Procesando salida con ID: $qrId"
-            else -> "Error en el procesamiento"
+    private fun procesarSalida(codigo: String, tipoFormato: String?) {
+        // Aquí procesarías la salida del vehículo
+        val mensaje = buildString {
+            append("Procesando salida:\n")
+            append("Código: $codigo\n")
+            if (tipoFormato != null) {
+                append("Tipo: $tipoFormato\n")
+            }
+            append("\nBuscando en sistema...")
         }
 
         Toast.makeText(this, mensaje, Toast.LENGTH_LONG).show()
 
-        // Aquí implementarás:
-        // 1. Buscar registro en BD
-        // 2. Calcular tiempo
-        // 3. Calcular monto
-        // 4. Registrar salida
-        // 5. Imprimir recibo
+        // Aquí irían las siguientes acciones:
+        // 1. Buscar el registro en la base de datos por placa
+        // 2. Calcular el tiempo de estancia
+        // 3. Calcular el monto a cobrar
+        // 4. Registrar la salida
+        // 5. Imprimir recibo de salida
 
         binding.etPlaca.text?.clear()
     }
