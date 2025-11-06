@@ -2,6 +2,7 @@ package com.parking.system
 
 import android.content.Intent
 import android.os.Bundle
+import android.view.View
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import com.parking.system.databinding.ActivityHomeBinding
@@ -10,7 +11,7 @@ class HomeActivity : AppCompatActivity() {
 
     private lateinit var binding: ActivityHomeBinding
     private lateinit var username: String
-    private lateinit var userType: String
+    private lateinit var userType: UserType
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -18,25 +19,39 @@ class HomeActivity : AppCompatActivity() {
         setContentView(binding.root)
 
         username = intent.getStringExtra("USERNAME") ?: "Usuario"
-        userType = intent.getStringExtra("USER_TYPE") ?: "OPERADOR"
+        val userTypeString = intent.getStringExtra("USER_TYPE") ?: "OPERADOR"
+        userType = UserType.valueOf(userTypeString)
 
         setupUI()
         setupBottomNavigation()
+        applyPermissions()
     }
 
     private fun setupUI() {
         binding.tvWelcome.text = "Bienvenido, $username"
 
         binding.btnIngresoVehiculo.setOnClickListener {
-            startActivity(Intent(this, IngresoVehiculoActivity::class.java))
+            if (userType.canAccessEntry()) {
+                startActivity(Intent(this, IngresoVehiculoActivity::class.java))
+            } else {
+                showNoPermissionDialog()
+            }
         }
 
         binding.btnSalidaVehiculo.setOnClickListener {
-            startActivity(Intent(this, SalidaVehiculoActivity::class.java))
+            if (userType.canAccessExit()) {
+                startActivity(Intent(this, SalidaVehiculoActivity::class.java))
+            } else {
+                showNoPermissionDialog()
+            }
         }
 
         binding.btnMantenimiento.setOnClickListener {
-            startActivity(Intent(this, MantenimientoActivity::class.java))
+            if (userType.canAccessMaintenance()) {
+                startActivity(Intent(this, MantenimientoActivity::class.java))
+            } else {
+                showNoPermissionDialog()
+            }
         }
 
         binding.btnCerrarSesion.setOnClickListener {
@@ -44,29 +59,57 @@ class HomeActivity : AppCompatActivity() {
         }
     }
 
+    private fun applyPermissions() {
+        if (!userType.canAccessMaintenance()) {
+            binding.btnMantenimiento.visibility = View.GONE
+        }
+    }
+
     private fun setupBottomNavigation() {
         binding.bottomNavigation.setOnItemSelectedListener { item ->
             when (item.itemId) {
                 R.id.nav_ingreso -> {
-                    startActivity(Intent(this, IngresoVehiculoActivity::class.java))
+                    if (userType.canAccessEntry()) {
+                        startActivity(Intent(this, IngresoVehiculoActivity::class.java))
+                    } else {
+                        showNoPermissionDialog()
+                    }
                     true
                 }
                 R.id.nav_salida -> {
-                    startActivity(Intent(this, SalidaVehiculoActivity::class.java))
+                    if (userType.canAccessExit()) {
+                        startActivity(Intent(this, SalidaVehiculoActivity::class.java))
+                    } else {
+                        showNoPermissionDialog()
+                    }
                     true
                 }
                 R.id.nav_mantenimiento -> {
-                    startActivity(Intent(this, MantenimientoActivity::class.java))
+                    if (userType.canAccessMaintenance()) {
+                        startActivity(Intent(this, MantenimientoActivity::class.java))
+                    } else {
+                        showNoPermissionDialog()
+                    }
                     true
                 }
-                R.id.nav_home -> {
-                    true
-                }
+                R.id.nav_home -> true
                 else -> false
             }
         }
 
         binding.bottomNavigation.selectedItemId = R.id.nav_home
+
+        if (!userType.canAccessMaintenance()) {
+            binding.bottomNavigation.menu.removeItem(R.id.nav_mantenimiento)
+        }
+    }
+
+    private fun showNoPermissionDialog() {
+        AlertDialog.Builder(this)
+            .setTitle("Acceso Denegado")
+            .setMessage("No tienes permisos para acceder a esta sección.")
+            .setPositiveButton("OK", null)
+            .show()
     }
 
     private fun showLogoutDialog() {

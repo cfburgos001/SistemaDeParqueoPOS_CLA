@@ -14,7 +14,7 @@ class LoginActivity : AppCompatActivity() {
     // Usuarios predefinidos
     private val users = mapOf(
         "Admin" to User("Admin", "Admin", UserType.ADMINISTRADOR),
-        "User" to User("User", "User", UserType.OPERADOR),
+        "Operador" to User("Operador", "Operador", UserType.OPERADOR),
         "Caja" to User("Caja", "Caja", UserType.CAJA)
     )
 
@@ -80,16 +80,4 @@ class LoginActivity : AppCompatActivity() {
             apply()
         }
     }
-}
-
-data class User(
-    val username: String,
-    val password: String,
-    val type: UserType
-)
-
-enum class UserType {
-    ADMINISTRADOR,
-    OPERADOR,
-    CAJA
 }

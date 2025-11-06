@@ -19,20 +19,151 @@
             android:background="#1976D2"/>
     </com.google.android.material.appbar.AppBarLayout>
 
-    <LinearLayout
+    <ScrollView
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:orientation="vertical"
-        android:gravity="center"
-        android:padding="24dp">
+        android:fillViewport="true">
 
-        <TextView
-            android:id="@+id/tvMessage"
-            android:layout_width="wrap_content"
+        <LinearLayout
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="Módulo de mantenimiento\nen desarrollo"
-            android:textSize="18sp"
-            android:textAlignment="center"
-            android:textColor="#212121"/>
-    </LinearLayout>
+            android:orientation="vertical"
+            android:padding="24dp">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Configuración del Servidor"
+                android:textSize="20sp"
+                android:textStyle="bold"
+                android:textColor="#0D47A1"
+                android:layout_marginBottom="8dp"/>
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Configure la conexión a la base de datos MSSQL"
+                android:textSize="14sp"
+                android:textColor="#757575"
+                android:layout_marginBottom="24dp"/>
+
+            <!-- IP del Servidor -->
+            <com.google.android.material.textfield.TextInputLayout
+                android:id="@+id/tilServerIp"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:hint="IP del Servidor"
+                style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
+                android:layout_marginBottom="16dp">
+
+                <com.google.android.material.textfield.TextInputEditText
+                    android:id="@+id/etServerIp"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:inputType="text"
+                    android:maxLines="1"/>
+            </com.google.android.material.textfield.TextInputLayout>
+
+            <!-- Puerto -->
+            <com.google.android.material.textfield.TextInputLayout
+                android:id="@+id/tilServerPort"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:hint="Puerto"
+                style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
+                android:layout_marginBottom="16dp">
+
+                <com.google.android.material.textfield.TextInputEditText
+                    android:id="@+id/etServerPort"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:inputType="number"
+                    android:maxLines="1"/>
+            </com.google.android.material.textfield.TextInputLayout>
+
+            <!-- Nombre de la Base de Datos -->
+            <com.google.android.material.textfield.TextInputLayout
+                android:id="@+id/tilDatabaseName"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:hint="Nombre de la Base de Datos"
+                style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
+                android:layout_marginBottom="16dp">
+
+                <com.google.android.material.textfield.TextInputEditText
+                    android:id="@+id/etDatabaseName"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:inputType="text"
+                    android:maxLines="1"/>
+            </com.google.android.material.textfield.TextInputLayout>
+
+            <!-- Usuario BD -->
+            <com.google.android.material.textfield.TextInputLayout
+                android:id="@+id/tilDbUsername"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:hint="Usuario de la BD"
+                style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
+                android:layout_marginBottom="16dp">
+
+                <com.google.android.material.textfield.TextInputEditText
+                    android:id="@+id/etDbUsername"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:inputType="text"
+                    android:maxLines="1"/>
+            </com.google.android.material.textfield.TextInputLayout>
+
+            <!-- Contraseña BD -->
+            <com.google.android.material.textfield.TextInputLayout
+                android:id="@+id/tilDbPassword"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:hint="Contraseña de la BD"
+                style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
+                app:endIconMode="password_toggle"
+                android:layout_marginBottom="24dp">
+
+                <com.google.android.material.textfield.TextInputEditText
+                    android:id="@+id/etDbPassword"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:inputType="textPassword"
+                    android:maxLines="1"/>
+            </com.google.android.material.textfield.TextInputLayout>
+
+            <!-- Botón Guardar -->
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnGuardar"
+                android:layout_width="match_parent"
+                android:layout_height="60dp"
+                android:text="Guardar Configuración"
+                android:textSize="16sp"
+                app:cornerRadius="12dp"
+                android:layout_marginBottom="12dp"/>
+
+            <!-- Botón Probar Conexión -->
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnProbarConexion"
+                android:layout_width="match_parent"
+                android:layout_height="60dp"
+                android:text="Probar Conexión"
+                android:textSize="16sp"
+                app:cornerRadius="12dp"
+                style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+                android:layout_marginBottom="12dp"/>
+
+            <!-- Botón Restaurar -->
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnRestaurar"
+                android:layout_width="match_parent"
+                android:layout_height="60dp"
+                android:text="Restaurar Valores por Defecto"
+                android:textSize="16sp"
+                app:cornerRadius="12dp"
+                style="@style/Widget.MaterialComponents.Button.TextButton"/>
+
+        </LinearLayout>
+    </ScrollView>
 </LinearLayout>
