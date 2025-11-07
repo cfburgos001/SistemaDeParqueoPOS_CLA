@@ -5,16 +5,23 @@ import android.widget.Toast
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.widget.addTextChangedListener
+import androidx.lifecycle.lifecycleScope
+import com.parking.system.database.ConnectionResult
+import com.parking.system.database.DatabaseHelper
 import com.parking.system.databinding.ActivityMantenimientoBinding
+import kotlinx.coroutines.launch
 
 class MantenimientoActivity : AppCompatActivity() {
 
     private lateinit var binding: ActivityMantenimientoBinding
+    private lateinit var databaseHelper: DatabaseHelper
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         binding = ActivityMantenimientoBinding.inflate(layoutInflater)
         setContentView(binding.root)
+
+        databaseHelper = DatabaseHelper(this)
 
         setupUI()
         loadServerConfig()
@@ -25,7 +32,6 @@ class MantenimientoActivity : AppCompatActivity() {
         supportActionBar?.setDisplayHomeAsUpEnabled(true)
         supportActionBar?.title = "Mantenimiento"
 
-        // Limpiar errores al escribir
         binding.etServerIp.addTextChangedListener {
             binding.tilServerIp.error = null
         }
@@ -46,17 +52,14 @@ class MantenimientoActivity : AppCompatActivity() {
             binding.tilDbPassword.error = null
         }
 
-        // Botón guardar
         binding.btnGuardar.setOnClickListener {
             guardarConfiguracion()
         }
 
-        // Botón probar conexión
         binding.btnProbarConexion.setOnClickListener {
             probarConexion()
         }
 
-        // Botón restaurar valores por defecto
         binding.btnRestaurar.setOnClickListener {
             mostrarDialogoRestaurar()
         }
@@ -65,11 +68,11 @@ class MantenimientoActivity : AppCompatActivity() {
     private fun loadServerConfig() {
         val sharedPref = getSharedPreferences("ServerConfig", MODE_PRIVATE)
 
-        binding.etServerIp.setText(sharedPref.getString("server_ip", "192.168.1.100"))
+        binding.etServerIp.setText(sharedPref.getString("server_ip", "10.0.1.6"))
         binding.etServerPort.setText(sharedPref.getString("server_port", "1433"))
         binding.etDatabaseName.setText(sharedPref.getString("database_name", "ParkingDB"))
-        binding.etDbUsername.setText(sharedPref.getString("db_username", "sa"))
-        binding.etDbPassword.setText(sharedPref.getString("db_password", ""))
+        binding.etDbUsername.setText(sharedPref.getString("db_username", "replicador"))
+        binding.etDbPassword.setText(sharedPref.getString("db_password", "tas$12345"))
     }
 
     private fun guardarConfiguracion() {
@@ -79,7 +82,6 @@ class MantenimientoActivity : AppCompatActivity() {
         val dbUsername = binding.etDbUsername.text.toString().trim()
         val dbPassword = binding.etDbPassword.text.toString().trim()
 
-        // Validaciones
         if (serverIp.isEmpty()) {
             binding.tilServerIp.error = "Ingrese la IP del servidor"
             return
@@ -100,20 +102,17 @@ class MantenimientoActivity : AppCompatActivity() {
             return
         }
 
-        // Validar formato de IP
         if (!isValidIP(serverIp)) {
             binding.tilServerIp.error = "Formato de IP inválido"
             return
         }
 
-        // Validar puerto
         val port = serverPort.toIntOrNull()
         if (port == null || port < 1 || port > 65535) {
             binding.tilServerPort.error = "Puerto inválido (1-65535)"
             return
         }
 
-        // Guardar configuración
         val sharedPref = getSharedPreferences("ServerConfig", MODE_PRIVATE)
         with(sharedPref.edit()) {
             putString("server_ip", serverIp)
@@ -137,16 +136,41 @@ class MantenimientoActivity : AppCompatActivity() {
             return
         }
 
-        // Por ahora solo simular la prueba de conexión
-        // Después implementaremos la conexión real a MSSQL
-        AlertDialog.Builder(this)
-            .setTitle("Probar Conexión")
-            .setMessage("Servidor: $serverIp:$serverPort\nBase de datos: $databaseName\n\n¿Desea probar la conexión?")
-            .setPositiveButton("Probar") { _, _ ->
-                Toast.makeText(this, "Función de prueba de conexión\nSe implementará con MSSQL", Toast.LENGTH_LONG).show()
+        // Guardar temporalmente la configuración
+        guardarConfiguracion()
+
+        // Mostrar diálogo de progreso
+        val progressDialog = AlertDialog.Builder(this)
+            .setTitle("Probando Conexión")
+            .setMessage("Conectando a $serverIp:$serverPort...\nPor favor espere.")
+            .setCancelable(false)
+            .create()
+
+        progressDialog.show()
+
+        // Probar conexión en background
+        lifecycleScope.launch {
+            val result = databaseHelper.testConnection()
+
+            progressDialog.dismiss()
+
+            when (result) {
+                is ConnectionResult.Success -> {
+                    AlertDialog.Builder(this@MantenimientoActivity)
+                        .setTitle("✓ Conexión Exitosa")
+                        .setMessage(result.message)
+                        .setPositiveButton("OK", null)
+                        .show()
+                }
+                is ConnectionResult.Error -> {
+                    AlertDialog.Builder(this@MantenimientoActivity)
+                        .setTitle("✗ Error de Conexión")
+                        .setMessage(result.message)
+                        .setPositiveButton("OK", null)
+                        .show()
+                }
             }
-            .setNegativeButton("Cancelar", null)
-            .show()
+        }
     }
 
     private fun mostrarDialogoRestaurar() {
@@ -161,11 +185,11 @@ class MantenimientoActivity : AppCompatActivity() {
     }
 
     private fun restaurarValoresPorDefecto() {
-        binding.etServerIp.setText("192.168.1.100")
+        binding.etServerIp.setText("10.0.1.6")
         binding.etServerPort.setText("1433")
         binding.etDatabaseName.setText("ParkingDB")
-        binding.etDbUsername.setText("sa")
-        binding.etDbPassword.setText("")
+        binding.etDbUsername.setText("replicador")
+        binding.etDbPassword.setText("tas%12345")
 
         Toast.makeText(this, "Valores restaurados (no guardados)", Toast.LENGTH_SHORT).show()
     }

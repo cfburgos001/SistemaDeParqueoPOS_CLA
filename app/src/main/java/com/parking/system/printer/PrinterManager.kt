@@ -79,7 +79,7 @@ object PrinterManager {
         // Encabezado
         out.write(byteArrayOf(0x1B, 0x61, 0x01)) // Centrar
         out.write(byteArrayOf(0x1B, 0x45, 0x01)) // Negrita
-        out.write("SISTEMA DE PARQUEO\n".utf8())
+        out.write("CENTRO PANAMERICANO DE OJOS\n".utf8())
         out.write("TICKET DE INGRESO\n".utf8())
         out.write(byteArrayOf(0x1B, 0x45, 0x00))
         out.write("========================\n".utf8())
@@ -109,7 +109,7 @@ object PrinterManager {
         out.write("========================\n".utf8())
         out.write(byteArrayOf(0x1B, 0x61, 0x01)) // Centrar
         out.write(byteArrayOf(0x1B, 0x45, 0x01))
-        out.write("CONSERVE ESTE TICKET\n".utf8())
+        out.write("VALIDAR ESTE TICKET\n".utf8())
         out.write("PARA SU SALIDA\n".utf8())
         out.write(byteArrayOf(0x1B, 0x45, 0x00))
         out.write("========================\n".utf8())

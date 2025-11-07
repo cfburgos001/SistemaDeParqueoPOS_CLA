@@ -61,4 +61,7 @@ dependencies {
     implementation("com.google.code.gson:gson:2.10.1")
 // Coroutines
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.7.1")
+
+    // SQL Server - JTDS Driver
+    implementation("net.sourceforge.jtds:jtds:1.3.1")
 }
