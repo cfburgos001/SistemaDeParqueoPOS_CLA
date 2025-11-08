@@ -28,142 +28,260 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="vertical"
-            android:padding="24dp">
+            android:padding="16dp">
 
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="Configuración del Servidor"
-                android:textSize="20sp"
-                android:textStyle="bold"
-                android:textColor="#0D47A1"
-                android:layout_marginBottom="8dp"/>
-
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="Configure la conexión a la base de datos MSSQL"
-                android:textSize="14sp"
-                android:textColor="#757575"
-                android:layout_marginBottom="24dp"/>
-
-            <!-- IP del Servidor -->
-            <com.google.android.material.textfield.TextInputLayout
-                android:id="@+id/tilServerIp"
+            <!-- SECCIÓN: GESTIÓN DE USUARIOS -->
+            <com.google.android.material.card.MaterialCardView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:hint="IP del Servidor"
-                style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
+                app:cardCornerRadius="12dp"
+                app:cardElevation="4dp"
                 android:layout_marginBottom="16dp">
 
-                <com.google.android.material.textfield.TextInputEditText
-                    android:id="@+id/etServerIp"
+                <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:inputType="text"
-                    android:maxLines="1"/>
-            </com.google.android.material.textfield.TextInputLayout>
+                    android:orientation="vertical"
+                    android:padding="16dp">
 
-            <!-- Puerto -->
-            <com.google.android.material.textfield.TextInputLayout
-                android:id="@+id/tilServerPort"
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="👥 Gestión de Usuarios"
+                        android:textSize="18sp"
+                        android:textStyle="bold"
+                        android:textColor="#0D47A1"
+                        android:layout_marginBottom="8dp"/>
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Administrar operadores y usuarios del sistema"
+                        android:textSize="14sp"
+                        android:textColor="#757575"
+                        android:layout_marginBottom="12dp"/>
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/btnGestionUsuarios"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="Gestionar Usuarios"
+                        app:icon="@android:drawable/ic_menu_manage"
+                        app:cornerRadius="8dp"/>
+                </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
+
+            <!-- SECCIÓN: CONFIGURACIÓN DE DISPOSITIVO -->
+            <com.google.android.material.card.MaterialCardView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:hint="Puerto"
-                style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
+                app:cardCornerRadius="12dp"
+                app:cardElevation="4dp"
                 android:layout_marginBottom="16dp">
 
-                <com.google.android.material.textfield.TextInputEditText
-                    android:id="@+id/etServerPort"
+                <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:inputType="number"
-                    android:maxLines="1"/>
-            </com.google.android.material.textfield.TextInputLayout>
+                    android:orientation="vertical"
+                    android:padding="16dp">
 
-            <!-- Nombre de la Base de Datos -->
-            <com.google.android.material.textfield.TextInputLayout
-                android:id="@+id/tilDatabaseName"
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="📱 Configuración de Dispositivo"
+                        android:textSize="18sp"
+                        android:textStyle="bold"
+                        android:textColor="#0D47A1"
+                        android:layout_marginBottom="8dp"/>
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="ID del Dispositivo:"
+                        android:textSize="14sp"
+                        android:textColor="#757575"
+                        android:layout_marginBottom="4dp"/>
+
+                    <TextView
+                        android:id="@+id/tvIdDispositivo"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Cargando..."
+                        android:textSize="16sp"
+                        android:textStyle="bold"
+                        android:textColor="#212121"
+                        android:layout_marginBottom="8dp"/>
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Tipo:"
+                        android:textSize="14sp"
+                        android:textColor="#757575"
+                        android:layout_marginBottom="4dp"/>
+
+                    <TextView
+                        android:id="@+id/tvTipoDispositivo"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="MIXTO"
+                        android:textSize="16sp"
+                        android:textStyle="bold"
+                        android:textColor="#212121"
+                        android:layout_marginBottom="12dp"/>
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/btnConfigDispositivo"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="Configurar Dispositivo"
+                        app:icon="@android:drawable/ic_menu_edit"
+                        app:cornerRadius="8dp"
+                        style="@style/Widget.MaterialComponents.Button.OutlinedButton"/>
+                </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
+
+            <!-- SECCIÓN: CONFIGURACIÓN DEL SERVIDOR -->
+            <com.google.android.material.card.MaterialCardView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:hint="Nombre de la Base de Datos"
-                style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
+                app:cardCornerRadius="12dp"
+                app:cardElevation="4dp"
                 android:layout_marginBottom="16dp">
 
-                <com.google.android.material.textfield.TextInputEditText
-                    android:id="@+id/etDatabaseName"
+                <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:inputType="text"
-                    android:maxLines="1"/>
-            </com.google.android.material.textfield.TextInputLayout>
+                    android:orientation="vertical"
+                    android:padding="16dp">
 
-            <!-- Usuario BD -->
-            <com.google.android.material.textfield.TextInputLayout
-                android:id="@+id/tilDbUsername"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:hint="Usuario de la BD"
-                style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
-                android:layout_marginBottom="16dp">
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="🖥️ Configuración del Servidor"
+                        android:textSize="18sp"
+                        android:textStyle="bold"
+                        android:textColor="#0D47A1"
+                        android:layout_marginBottom="12dp"/>
 
-                <com.google.android.material.textfield.TextInputEditText
-                    android:id="@+id/etDbUsername"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:inputType="text"
-                    android:maxLines="1"/>
-            </com.google.android.material.textfield.TextInputLayout>
+                    <!-- IP del Servidor -->
+                    <com.google.android.material.textfield.TextInputLayout
+                        android:id="@+id/tilServerIp"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:hint="IP del Servidor"
+                        style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
+                        android:layout_marginBottom="12dp">
 
-            <!-- Contraseña BD -->
-            <com.google.android.material.textfield.TextInputLayout
-                android:id="@+id/tilDbPassword"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:hint="Contraseña de la BD"
-                style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
-                app:endIconMode="password_toggle"
-                android:layout_marginBottom="24dp">
+                        <com.google.android.material.textfield.TextInputEditText
+                            android:id="@+id/etServerIp"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:inputType="text"
+                            android:maxLines="1"/>
+                    </com.google.android.material.textfield.TextInputLayout>
 
-                <com.google.android.material.textfield.TextInputEditText
-                    android:id="@+id/etDbPassword"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:inputType="textPassword"
-                    android:maxLines="1"/>
-            </com.google.android.material.textfield.TextInputLayout>
+                    <!-- Puerto -->
+                    <com.google.android.material.textfield.TextInputLayout
+                        android:id="@+id/tilServerPort"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:hint="Puerto"
+                        style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
+                        android:layout_marginBottom="12dp">
 
-            <!-- Botón Guardar -->
-            <com.google.android.material.button.MaterialButton
-                android:id="@+id/btnGuardar"
-                android:layout_width="match_parent"
-                android:layout_height="60dp"
-                android:text="Guardar Configuración"
-                android:textSize="16sp"
-                app:cornerRadius="12dp"
-                android:layout_marginBottom="12dp"/>
+                        <com.google.android.material.textfield.TextInputEditText
+                            android:id="@+id/etServerPort"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:inputType="number"
+                            android:maxLines="1"/>
+                    </com.google.android.material.textfield.TextInputLayout>
 
-            <!-- Botón Probar Conexión -->
-            <com.google.android.material.button.MaterialButton
-                android:id="@+id/btnProbarConexion"
-                android:layout_width="match_parent"
-                android:layout_height="60dp"
-                android:text="Probar Conexión"
-                android:textSize="16sp"
-                app:cornerRadius="12dp"
-                style="@style/Widget.MaterialComponents.Button.OutlinedButton"
-                android:layout_marginBottom="12dp"/>
+                    <!-- Nombre de la Base de Datos -->
+                    <com.google.android.material.textfield.TextInputLayout
+                        android:id="@+id/tilDatabaseName"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:hint="Nombre de la Base de Datos"
+                        style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
+                        android:layout_marginBottom="12dp">
 
-            <!-- Botón Restaurar -->
-            <com.google.android.material.button.MaterialButton
-                android:id="@+id/btnRestaurar"
-                android:layout_width="match_parent"
-                android:layout_height="60dp"
-                android:text="Restaurar Valores por Defecto"
-                android:textSize="16sp"
-                app:cornerRadius="12dp"
-                style="@style/Widget.MaterialComponents.Button.TextButton"/>
+                        <com.google.android.material.textfield.TextInputEditText
+                            android:id="@+id/etDatabaseName"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:inputType="text"
+                            android:maxLines="1"/>
+                    </com.google.android.material.textfield.TextInputLayout>
 
+                    <!-- Usuario BD -->
+                    <com.google.android.material.textfield.TextInputLayout
+                        android:id="@+id/tilDbUsername"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:hint="Usuario de la BD"
+                        style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
+                        android:layout_marginBottom="12dp">
+
+                        <com.google.android.material.textfield.TextInputEditText
+                            android:id="@+id/etDbUsername"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:inputType="text"
+                            android:maxLines="1"/>
+                    </com.google.android.material.textfield.TextInputLayout>
+
+                    <!-- Contraseña BD -->
+                    <com.google.android.material.textfield.TextInputLayout
+                        android:id="@+id/tilDbPassword"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:hint="Contraseña de la BD"
+                        style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
+                        app:endIconMode="password_toggle"
+                        android:layout_marginBottom="16dp">
+
+                        <com.google.android.material.textfield.TextInputEditText
+                            android:id="@+id/etDbPassword"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:inputType="textPassword"
+                            android:maxLines="1"/>
+                    </com.google.android.material.textfield.TextInputLayout>
+
+                    <!-- Botón Guardar -->
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/btnGuardar"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="Guardar Configuración"
+                        android:textSize="14sp"
+                        app:cornerRadius="8dp"
+                        android:layout_marginBottom="8dp"/>
+
+                    <!-- Botón Probar Conexión -->
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/btnProbarConexion"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="Probar Conexión"
+                        android:textSize="14sp"
+                        app:cornerRadius="8dp"
+                        style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+                        android:layout_marginBottom="8dp"/>
+
+                    <!-- Botón Restaurar -->
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/btnRestaurar"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="Restaurar Valores"
+                        android:textSize="14sp"
+                        app:cornerRadius="8dp"
+                        style="@style/Widget.MaterialComponents.Button.TextButton"/>
+                </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
         </LinearLayout>
     </ScrollView>
 </LinearLayout>

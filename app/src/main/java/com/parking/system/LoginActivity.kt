@@ -5,23 +5,23 @@ import android.os.Bundle
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.widget.addTextChangedListener
+import androidx.lifecycle.lifecycleScope
+import com.parking.system.database.OperadorRepository
+import com.parking.system.database.OperadorResult
 import com.parking.system.databinding.ActivityLoginBinding
+import kotlinx.coroutines.launch
 
 class LoginActivity : AppCompatActivity() {
 
     private lateinit var binding: ActivityLoginBinding
-
-    // Usuarios predefinidos
-    private val users = mapOf(
-        "Admin" to User("Admin", "Admin", UserType.ADMINISTRADOR),
-        "Operador" to User("Operador", "Operador", UserType.OPERADOR),
-        "Caja" to User("Caja", "Caja", UserType.CAJA)
-    )
+    private lateinit var operadorRepository: OperadorRepository
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         binding = ActivityLoginBinding.inflate(layoutInflater)
         setContentView(binding.root)
+
+        operadorRepository = OperadorRepository(this)
 
         setupUI()
     }
@@ -54,28 +54,48 @@ class LoginActivity : AppCompatActivity() {
             return
         }
 
-        val user = users[username]
+        binding.btnLogin.isEnabled = false
 
-        if (user != null && user.password == password) {
-            Toast.makeText(this, "Bienvenido, ${user.username}", Toast.LENGTH_SHORT).show()
-            saveSession(user)
+        lifecycleScope.launch {
+            when (val result = operadorRepository.validarOperador(username, password)) {
+                is OperadorResult.Success -> {
+                    val operador = result.operador
 
-            val intent = Intent(this, HomeActivity::class.java)
-            intent.putExtra("USER_TYPE", user.type.name)
-            intent.putExtra("USERNAME", user.username)
-            startActivity(intent)
-            finish()
-        } else {
-            Toast.makeText(this, "Usuario o contraseña incorrectos", Toast.LENGTH_SHORT).show()
-            binding.tilPassword.error = "Credenciales inválidas"
+                    Toast.makeText(
+                        this@LoginActivity,
+                        "Bienvenido, ${operador.getNombreCompleto()}",
+                        Toast.LENGTH_SHORT
+                    ).show()
+
+                    saveSession(operador)
+
+                    val intent = Intent(this@LoginActivity, HomeActivity::class.java)
+                    intent.putExtra("USER_TYPE", operador.tipoUsuario)
+                    intent.putExtra("USERNAME", operador.getNombreCompleto())
+                    intent.putExtra("ID_OPERADOR", operador.id)
+                    startActivity(intent)
+                    finish()
+                }
+                is OperadorResult.Error -> {
+                    Toast.makeText(
+                        this@LoginActivity,
+                        result.message,
+                        Toast.LENGTH_SHORT
+                    ).show()
+                    binding.tilPassword.error = "Credenciales inválidas"
+                    binding.btnLogin.isEnabled = true
+                }
+            }
         }
     }
 
-    private fun saveSession(user: User) {
+    private fun saveSession(operador: com.parking.system.database.Operador) {
         val sharedPref = getSharedPreferences("ParkingSession", MODE_PRIVATE)
         with(sharedPref.edit()) {
-            putString("username", user.username)
-            putString("userType", user.type.name)
+            putString("username", operador.username)
+            putString("nombre_completo", operador.getNombreCompleto())
+            putInt("id_operador", operador.id)
+            putString("userType", operador.tipoUsuario)
             putBoolean("isLoggedIn", true)
             apply()
         }

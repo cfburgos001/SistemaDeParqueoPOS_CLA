@@ -85,8 +85,8 @@ object PrinterManager {
         out.write("========================\n".utf8())
         out.write("\n".utf8())
 
-        // CODE128 - ESCANEABLE
-        printBarcode128(out, data.plate)
+        // CODE128 - ESCANEABLE (imprime el ID único)
+        printBarcode128(out, data.uniqueId) // ← CAMBIO AQUÍ: usa uniqueId en lugar de plate
         out.write("\n".utf8())
 
         // Información principal
@@ -131,8 +131,8 @@ object PrinterManager {
             // GS H - Posición del texto HRI (abajo)
             out.write(byteArrayOf(0x1D, 0x48, 0x02))
 
-            // GS h - Altura del código de barras (60 puntos)
-            out.write(byteArrayOf(0x1D, 0x68, 0x3C))
+            // GS h - Altura del código de barras (100 puntos)
+            out.write(byteArrayOf(0x1D, 0x68, 0x64))
 
             // GS w - Ancho del código de barras (3 = mediano)
             out.write(byteArrayOf(0x1D, 0x77, 0x03))
@@ -158,7 +158,7 @@ object PrinterManager {
     private fun buildReceiptText(data: ReceiptData): String {
         val dateFormatter = SimpleDateFormat("dd/MM/yyyy HH:mm:ss", Locale.getDefault())
         return buildString {
-            appendLine("SISTEMA DE PARQUEO")
+            appendLine("CENTRO PANAMERICANO DE OJOS")
             appendLine("TICKET DE INGRESO")
             appendLine("========================")
             appendLine()
@@ -170,7 +170,7 @@ object PrinterManager {
             appendLine()
             appendLine("ID: ${data.uniqueId}")
             appendLine("========================")
-            appendLine("CONSERVE ESTE TICKET")
+            appendLine("VALIDAR ESTE TICKET")
             appendLine("========================")
         }
     }

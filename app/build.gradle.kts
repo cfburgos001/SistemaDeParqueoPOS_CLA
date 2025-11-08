@@ -64,4 +64,8 @@ dependencies {
 
     // SQL Server - JTDS Driver
     implementation("net.sourceforge.jtds:jtds:1.3.1")
+    // RecyclerView
+    implementation("androidx.recyclerview:recyclerview:1.3.2")
+// Material Chips
+    implementation("com.google.android.material:material:1.9.0")
 }

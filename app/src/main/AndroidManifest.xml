@@ -68,6 +68,19 @@
             android:name="com.journeyapps.barcodescanner.CaptureActivity"
             android:screenOrientation="portrait"
             tools:replace="screenOrientation" />
+
+
+        <!-- Activity Confirmación de Salida -->
+        <activity
+            android:name=".SalidaConfirmacionActivity"
+            android:exported="false"
+            android:screenOrientation="portrait" />
+
+        <!-- Activity Gestión de Usuarios -->
+        <activity
+            android:name=".GestionUsuariosActivity"
+            android:exported="false"
+            android:screenOrientation="portrait" />
     </application>
 
 </manifest>

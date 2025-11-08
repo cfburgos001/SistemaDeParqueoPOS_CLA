@@ -1,13 +1,21 @@
 package com.parking.system
 
+import android.content.Intent
 import android.os.Bundle
+import android.view.LayoutInflater
+import android.widget.ArrayAdapter
+import android.widget.Spinner
+import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.widget.addTextChangedListener
 import androidx.lifecycle.lifecycleScope
+import com.google.android.material.textfield.TextInputEditText
 import com.parking.system.database.ConnectionResult
 import com.parking.system.database.DatabaseHelper
+import com.parking.system.database.DatabaseResult
+import com.parking.system.database.DispositivoManager
 import com.parking.system.databinding.ActivityMantenimientoBinding
 import kotlinx.coroutines.launch
 
@@ -15,6 +23,7 @@ class MantenimientoActivity : AppCompatActivity() {
 
     private lateinit var binding: ActivityMantenimientoBinding
     private lateinit var databaseHelper: DatabaseHelper
+    private lateinit var dispositivoManager: DispositivoManager
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -22,9 +31,11 @@ class MantenimientoActivity : AppCompatActivity() {
         setContentView(binding.root)
 
         databaseHelper = DatabaseHelper(this)
+        dispositivoManager = DispositivoManager(this)
 
         setupUI()
         loadServerConfig()
+        loadDispositivoInfo()
     }
 
     private fun setupUI() {
@@ -32,6 +43,18 @@ class MantenimientoActivity : AppCompatActivity() {
         supportActionBar?.setDisplayHomeAsUpEnabled(true)
         supportActionBar?.title = "Mantenimiento"
 
+        // Botón Gestión de Usuarios
+        binding.btnGestionUsuarios.setOnClickListener {
+            val intent = Intent(this, GestionUsuariosActivity::class.java)
+            startActivity(intent)
+        }
+
+        // Botón Configurar Dispositivo
+        binding.btnConfigDispositivo.setOnClickListener {
+            mostrarDialogoConfigDispositivo()
+        }
+
+        // Listeners para campos del servidor
         binding.etServerIp.addTextChangedListener {
             binding.tilServerIp.error = null
         }
@@ -65,14 +88,91 @@ class MantenimientoActivity : AppCompatActivity() {
         }
     }
 
+    private fun loadDispositivoInfo() {
+        lifecycleScope.launch {
+            val idDispositivo = dispositivoManager.obtenerIdDispositivo()
+            val tipoDispositivo = dispositivoManager.obtenerTipoDispositivo()
+
+            binding.tvIdDispositivo.text = idDispositivo
+            binding.tvTipoDispositivo.text = tipoDispositivo
+        }
+    }
+
+    private fun mostrarDialogoConfigDispositivo() {
+        val dialogView = LayoutInflater.from(this).inflate(R.layout.dialog_config_dispositivo, null)
+
+        val tvIdDispositivo = dialogView.findViewById<TextView>(R.id.tvIdDispositivo)
+        val etNombreDispositivo = dialogView.findViewById<TextInputEditText>(R.id.etNombreDispositivo)
+        val spinnerTipo = dialogView.findViewById<Spinner>(R.id.spinnerTipoDispositivo)
+
+        lifecycleScope.launch {
+            val idDispositivo = dispositivoManager.obtenerIdDispositivo()
+            tvIdDispositivo.text = idDispositivo
+        }
+
+        val dialog = AlertDialog.Builder(this)
+            .setTitle("Configurar Dispositivo")
+            .setView(dialogView)
+            .setPositiveButton("Guardar", null)
+            .setNegativeButton("Cancelar", null)
+            .create()
+
+        dialog.setOnShowListener {
+            val btnGuardar = dialog.getButton(AlertDialog.BUTTON_POSITIVE)
+            btnGuardar.setOnClickListener {
+                val nombreDispositivo = etNombreDispositivo.text.toString().trim()
+                val tipoDispositivo = spinnerTipo.selectedItem.toString()
+
+                if (nombreDispositivo.isEmpty()) {
+                    Toast.makeText(this, "Ingrese el nombre del dispositivo", Toast.LENGTH_SHORT).show()
+                    return@setOnClickListener
+                }
+
+                // Guardar configuración
+                dispositivoManager.configurarTipoDispositivo(tipoDispositivo)
+
+                // Registrar en BD
+                lifecycleScope.launch {
+                    val idDispositivo = dispositivoManager.obtenerIdDispositivo()
+                    val result = dispositivoManager.registrarDispositivo(
+                        idDispositivo,
+                        nombreDispositivo,
+                        tipoDispositivo
+                    )
+
+                    when (result) {
+                        is DatabaseResult.Success -> {
+                            Toast.makeText(
+                                this@MantenimientoActivity,
+                                result.message,
+                                Toast.LENGTH_SHORT
+                            ).show()
+                            dialog.dismiss()
+                            loadDispositivoInfo()
+                        }
+                        is DatabaseResult.Error -> {
+                            Toast.makeText(
+                                this@MantenimientoActivity,
+                                result.message,
+                                Toast.LENGTH_LONG
+                            ).show()
+                        }
+                    }
+                }
+            }
+        }
+
+        dialog.show()
+    }
+
     private fun loadServerConfig() {
         val sharedPref = getSharedPreferences("ServerConfig", MODE_PRIVATE)
 
-        binding.etServerIp.setText(sharedPref.getString("server_ip", "10.0.1.6"))
+        binding.etServerIp.setText(sharedPref.getString("server_ip", "192.168.1.100"))
         binding.etServerPort.setText(sharedPref.getString("server_port", "1433"))
         binding.etDatabaseName.setText(sharedPref.getString("database_name", "ParkingDB"))
-        binding.etDbUsername.setText(sharedPref.getString("db_username", "replicador"))
-        binding.etDbPassword.setText(sharedPref.getString("db_password", "tas$12345"))
+        binding.etDbUsername.setText(sharedPref.getString("db_username", "sa"))
+        binding.etDbPassword.setText(sharedPref.getString("db_password", ""))
     }
 
     private fun guardarConfiguracion() {
@@ -185,11 +285,11 @@ class MantenimientoActivity : AppCompatActivity() {
     }
 
     private fun restaurarValoresPorDefecto() {
-        binding.etServerIp.setText("10.0.1.6")
+        binding.etServerIp.setText("192.168.1.100")
         binding.etServerPort.setText("1433")
         binding.etDatabaseName.setText("ParkingDB")
-        binding.etDbUsername.setText("replicador")
-        binding.etDbPassword.setText("tas%12345")
+        binding.etDbUsername.setText("sa")
+        binding.etDbPassword.setText("")
 
         Toast.makeText(this, "Valores restaurados (no guardados)", Toast.LENGTH_SHORT).show()
     }
