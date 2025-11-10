@@ -9,8 +9,9 @@ import com.parking.system.database.DatabaseResult
 import com.parking.system.database.DispositivoManager
 import com.parking.system.database.VehiculoRepository
 import com.parking.system.databinding.ActivityIngresoVehiculoBinding
+import com.parking.system.hardware.PlumaController
 import kotlinx.coroutines.launch
-import java.util.*
+import java.util.Date
 
 class IngresoVehiculoActivity : AppCompatActivity() {
 
@@ -97,12 +98,20 @@ class IngresoVehiculoActivity : AppCompatActivity() {
 
             when (result) {
                 is DatabaseResult.Success -> {
+                    // 1. Imprimir ticket
                     printReceipt(receiptData)
+
+                    // 2. Mostrar mensaje de éxito
                     Toast.makeText(
                         this@IngresoVehiculoActivity,
                         "✓ Entrada registrada exitosamente",
                         Toast.LENGTH_SHORT
                     ).show()
+
+                    // 3. Levantar la pluma
+                    levantarPluma()
+
+                    // 4. Limpiar campo
                     binding.etPlaca.text?.clear()
                 }
                 is DatabaseResult.Error -> {
@@ -111,7 +120,10 @@ class IngresoVehiculoActivity : AppCompatActivity() {
                         "⚠ Error: ${result.message}\nTicket impreso localmente",
                         Toast.LENGTH_LONG
                     ).show()
+
+                    // Aún así imprimir ticket y levantar pluma
                     printReceipt(receiptData)
+                    levantarPluma()
                     binding.etPlaca.text?.clear()
                 }
             }
@@ -131,6 +143,36 @@ class IngresoVehiculoActivity : AppCompatActivity() {
         } catch (e: Exception) {
             Toast.makeText(this, "Error al imprimir: ${e.message}", Toast.LENGTH_LONG).show()
             e.printStackTrace()
+        }
+    }
+
+    /**
+     * Levanta la pluma de entrada
+     */
+    private fun levantarPluma() {
+        lifecycleScope.launch {
+            Toast.makeText(
+                this@IngresoVehiculoActivity,
+                "🚧 LEVANTANDO LA PLUMA...",
+                Toast.LENGTH_LONG
+            ).show()
+
+            // Levantar pluma por 5 segundos
+            val exito = PlumaController.levantarPluma(duracionSegundos = 5)
+
+            if (exito) {
+                Toast.makeText(
+                    this@IngresoVehiculoActivity,
+                    "✓ Pluma levantada - Puede pasar",
+                    Toast.LENGTH_SHORT
+                ).show()
+            } else {
+                Toast.makeText(
+                    this@IngresoVehiculoActivity,
+                    "⚠ Error al controlar la pluma",
+                    Toast.LENGTH_SHORT
+                ).show()
+            }
         }
     }
 

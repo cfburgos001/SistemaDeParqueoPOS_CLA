@@ -9,7 +9,8 @@ import com.parking.system.ReceiptData
 import java.io.OutputStream
 import java.nio.charset.Charset
 import java.text.SimpleDateFormat
-import java.util.*
+import java.util.Locale
+import java.util.UUID
 
 @SuppressLint("MissingPermission")
 object PrinterManager {
@@ -70,7 +71,7 @@ object PrinterManager {
     }
 
     /**
-     * Imprime ticket con CODE128
+     * Imprime ticket con CODE128 de la PLACA (más fácil de escanear)
      */
     private fun sendEscPosPrint(out: OutputStream, data: ReceiptData) {
         // Inicializar
@@ -85,8 +86,8 @@ object PrinterManager {
         out.write("========================\n".utf8())
         out.write("\n".utf8())
 
-        // CODE128 - ESCANEABLE (imprime el ID único)
-        printBarcode128(out, data.uniqueId) // ← CAMBIO AQUÍ: usa uniqueId en lugar de plate
+        // CODE128 - ESCANEABLE (imprime solo la PLACA para mejor lectura)
+        printBarcode128(out, data.plate)
         out.write("\n".utf8())
 
         // Información principal
