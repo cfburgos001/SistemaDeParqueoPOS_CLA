@@ -99,33 +99,30 @@ class MantenimientoActivity : AppCompatActivity() {
     }
 
     private fun mostrarDialogoConfigDispositivo() {
-        val dialogView = LayoutInflater.from(this).inflate(R.layout.dialog_config_dispositivo, null)
+        val dialogView = layoutInflater.inflate(R.layout.dialog_config_dispositivo, null)
 
         val tvIdDispositivo = dialogView.findViewById<TextView>(R.id.tvIdDispositivo)
         val etNombreDispositivo = dialogView.findViewById<TextInputEditText>(R.id.etNombreDispositivo)
         val spinnerTipo = dialogView.findViewById<Spinner>(R.id.spinnerTipoDispositivo)
 
+        // Cargar ID del dispositivo
         lifecycleScope.launch {
             val idDispositivo = dispositivoManager.obtenerIdDispositivo()
             tvIdDispositivo.text = idDispositivo
         }
 
+        // Crear el diálogo
         val dialog = AlertDialog.Builder(this)
             .setTitle("Configurar Dispositivo")
             .setView(dialogView)
-            .setPositiveButton("Guardar", null)
-            .setNegativeButton("Cancelar", null)
-            .create()
-
-        dialog.setOnShowListener {
-            val btnGuardar = dialog.getButton(AlertDialog.BUTTON_POSITIVE)
-            btnGuardar.setOnClickListener {
+            .setPositiveButton("Guardar") { _, _ ->
+                // Este código se ejecutará cuando se presione "Guardar"
                 val nombreDispositivo = etNombreDispositivo.text.toString().trim()
                 val tipoDispositivo = spinnerTipo.selectedItem.toString()
 
                 if (nombreDispositivo.isEmpty()) {
                     Toast.makeText(this, "Ingrese el nombre del dispositivo", Toast.LENGTH_SHORT).show()
-                    return@setOnClickListener
+                    return@setPositiveButton
                 }
 
                 // Guardar configuración
@@ -147,7 +144,6 @@ class MantenimientoActivity : AppCompatActivity() {
                                 result.message,
                                 Toast.LENGTH_SHORT
                             ).show()
-                            dialog.dismiss()
                             loadDispositivoInfo()
                         }
                         is DatabaseResult.Error -> {
@@ -160,10 +156,12 @@ class MantenimientoActivity : AppCompatActivity() {
                     }
                 }
             }
-        }
+            .setNegativeButton("Cancelar", null)
+            .create()
 
         dialog.show()
     }
+
 
     private fun loadServerConfig() {
         val sharedPref = getSharedPreferences("ServerConfig", MODE_PRIVATE)
