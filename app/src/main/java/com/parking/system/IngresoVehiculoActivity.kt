@@ -32,7 +32,23 @@ class IngresoVehiculoActivity : AppCompatActivity() {
         dispositivoManager = DispositivoManager(this)
 
         cargarDatosSesion()
+        verificarTipoDispositivo()
         setupUI()
+    }
+
+    private fun verificarTipoDispositivo() {
+        // Verificar si el dispositivo puede registrar entradas
+        if (!dispositivoManager.puedeRegistrarEntrada()) {
+            Toast.makeText(
+                this,
+                "⚠ Este dispositivo está configurado como SALIDA\nNo puede registrar entradas",
+                Toast.LENGTH_LONG
+            ).show()
+
+            // Opcional: cerrar la actividad después de 2 segundos
+            binding.btnRegistrarEntrada.isEnabled = false
+            binding.etPlaca.isEnabled = false
+        }
     }
 
     private fun cargarDatosSesion() {

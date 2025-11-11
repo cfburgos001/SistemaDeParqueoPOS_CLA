@@ -19,6 +19,7 @@ class VehiculoRepository(private val context: Context) {
 
     /**
      * Registra la entrada de un vehículo usando dbo.IOT_sp_RegistrarEntrada
+     * Ahora incluye IdEntryDevice y bitEntry según el tipo de dispositivo
      */
     suspend fun registrarEntrada(
         receiptData: ReceiptData,
@@ -36,6 +37,7 @@ class VehiculoRepository(private val context: Context) {
                 }
 
                 // Usar procedimiento almacenado con prefijo IOT_
+                // El SP ya maneja IdEntryDevice y bitEntry = 1 automáticamente
                 val sql = "{CALL dbo.IOT_sp_RegistrarEntrada(?, ?, ?, ?, ?)}"
                 val callableStatement = connection.prepareCall(sql)
 
@@ -55,7 +57,7 @@ class VehiculoRepository(private val context: Context) {
                 resultSet.close()
                 callableStatement.close()
 
-                Log.d(TAG, "✓ Entrada registrada - ID: $id, Placa: ${receiptData.plate}, Operador: $idOperador, Dispositivo: $idDispositivo")
+                Log.d(TAG, "✓ Entrada registrada - ID: $id, Placa: ${receiptData.plate}, Operador: $idOperador, Dispositivo: $idDispositivo (bitEntry=1)")
 
                 DatabaseResult.Success("Entrada registrada correctamente. ID: $id")
 

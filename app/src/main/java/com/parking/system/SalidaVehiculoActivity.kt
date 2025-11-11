@@ -8,6 +8,7 @@ import androidx.core.widget.addTextChangedListener
 import androidx.lifecycle.lifecycleScope
 import com.google.zxing.integration.android.IntentIntegrator
 import com.parking.system.database.CalculoResult
+import com.parking.system.database.DispositivoManager
 import com.parking.system.database.VehiculoDB
 import com.parking.system.database.VehiculoRepository
 import com.parking.system.database.VehiculoResult
@@ -18,6 +19,7 @@ class SalidaVehiculoActivity : AppCompatActivity() {
 
     private lateinit var binding: ActivitySalidaVehiculoBinding
     private lateinit var vehiculoRepository: VehiculoRepository
+    private lateinit var dispositivoManager: DispositivoManager
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -25,8 +27,26 @@ class SalidaVehiculoActivity : AppCompatActivity() {
         setContentView(binding.root)
 
         vehiculoRepository = VehiculoRepository(this)
+        dispositivoManager = DispositivoManager(this)
 
+        verificarTipoDispositivo()
         setupUI()
+    }
+
+    private fun verificarTipoDispositivo() {
+        // Verificar si el dispositivo puede registrar salidas
+        if (!dispositivoManager.puedeRegistrarSalida()) {
+            Toast.makeText(
+                this,
+                "⚠ Este dispositivo está configurado como ENTRADA\nNo puede registrar salidas",
+                Toast.LENGTH_LONG
+            ).show()
+
+            // Deshabilitar controles
+            binding.btnRegistrarPorPlaca.isEnabled = false
+            binding.btnEscanearQR.isEnabled = false
+            binding.etPlaca.isEnabled = false
+        }
     }
 
     private fun setupUI() {

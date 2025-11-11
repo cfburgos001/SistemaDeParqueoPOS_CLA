@@ -51,6 +51,46 @@ class DispositivoManager(private val context: Context) {
     }
 
     /**
+     * Obtiene el ID del dispositivo para entrada (IdEntryDevice)
+     * Según el tipo de dispositivo configurado
+     */
+    fun obtenerIdEntryDevice(): Int {
+        val tipo = obtenerTipoDispositivo()
+        return when (tipo) {
+            "ENTRADA", "MIXTO" -> 1  // Dispositivos de entrada o mixtos usan ID 1
+            else -> 0  // Dispositivos de solo salida no registran entrada
+        }
+    }
+
+    /**
+     * Obtiene el ID del dispositivo para salida (IdExitDevice)
+     * Según el tipo de dispositivo configurado
+     */
+    fun obtenerIdExitDevice(): Int {
+        val tipo = obtenerTipoDispositivo()
+        return when (tipo) {
+            "SALIDA", "MIXTO" -> 2  // Dispositivos de salida o mixtos usan ID 2
+            else -> 0  // Dispositivos de solo entrada no registran salida
+        }
+    }
+
+    /**
+     * Verifica si el dispositivo puede registrar entradas
+     */
+    fun puedeRegistrarEntrada(): Boolean {
+        val tipo = obtenerTipoDispositivo()
+        return tipo == "ENTRADA" || tipo == "MIXTO"
+    }
+
+    /**
+     * Verifica si el dispositivo puede registrar salidas
+     */
+    fun puedeRegistrarSalida(): Boolean {
+        val tipo = obtenerTipoDispositivo()
+        return tipo == "SALIDA" || tipo == "MIXTO"
+    }
+
+    /**
      * Obtiene el tipo de dispositivo
      */
     fun obtenerTipoDispositivo(): String {
