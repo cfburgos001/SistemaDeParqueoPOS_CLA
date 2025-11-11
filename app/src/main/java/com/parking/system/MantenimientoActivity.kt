@@ -3,7 +3,6 @@ package com.parking.system
 import android.content.Intent
 import android.os.Bundle
 import android.view.LayoutInflater
-import android.widget.ArrayAdapter
 import android.widget.Spinner
 import android.widget.TextView
 import android.widget.Toast
@@ -99,7 +98,7 @@ class MantenimientoActivity : AppCompatActivity() {
     }
 
     private fun mostrarDialogoConfigDispositivo() {
-        val dialogView = layoutInflater.inflate(R.layout.dialog_config_dispositivo, null)
+        val dialogView = LayoutInflater.from(this).inflate(R.layout.dialog_config_dispositivo, null)
 
         val tvIdDispositivo = dialogView.findViewById<TextView>(R.id.tvIdDispositivo)
         val etNombreDispositivo = dialogView.findViewById<TextInputEditText>(R.id.etNombreDispositivo)
@@ -116,7 +115,6 @@ class MantenimientoActivity : AppCompatActivity() {
             .setTitle("Configurar Dispositivo")
             .setView(dialogView)
             .setPositiveButton("Guardar") { _, _ ->
-                // Este código se ejecutará cuando se presione "Guardar"
                 val nombreDispositivo = etNombreDispositivo.text.toString().trim()
                 val tipoDispositivo = spinnerTipo.selectedItem.toString()
 
@@ -162,15 +160,15 @@ class MantenimientoActivity : AppCompatActivity() {
         dialog.show()
     }
 
-
     private fun loadServerConfig() {
         val sharedPref = getSharedPreferences("ServerConfig", MODE_PRIVATE)
 
-        binding.etServerIp.setText(sharedPref.getString("server_ip", "192.168.1.100"))
+        // Cargar con valores por defecto de la nueva configuración
+        binding.etServerIp.setText(sharedPref.getString("server_ip", "10.0.1.39"))
         binding.etServerPort.setText(sharedPref.getString("server_port", "1433"))
-        binding.etDatabaseName.setText(sharedPref.getString("database_name", "ParkingDB"))
-        binding.etDbUsername.setText(sharedPref.getString("db_username", "sa"))
-        binding.etDbPassword.setText(sharedPref.getString("db_password", ""))
+        binding.etDatabaseName.setText(sharedPref.getString("database_name", "Datapark"))
+        binding.etDbUsername.setText(sharedPref.getString("db_username", "pos"))
+        binding.etDbPassword.setText(sharedPref.getString("db_password", "Po\$2025#"))
     }
 
     private fun guardarConfiguracion() {
@@ -240,7 +238,7 @@ class MantenimientoActivity : AppCompatActivity() {
         // Mostrar diálogo de progreso
         val progressDialog = AlertDialog.Builder(this)
             .setTitle("Probando Conexión")
-            .setMessage("Conectando a $serverIp:$serverPort...\nPor favor espere.")
+            .setMessage("Conectando a $serverIp:$serverPort/$databaseName...\nPor favor espere.")
             .setCancelable(false)
             .create()
 
@@ -255,7 +253,7 @@ class MantenimientoActivity : AppCompatActivity() {
             when (result) {
                 is ConnectionResult.Success -> {
                     AlertDialog.Builder(this@MantenimientoActivity)
-                        .setTitle("✓ Conexión Exitosa")
+                        .setTitle("✓ Conexión Exitosa a Datapark")
                         .setMessage(result.message)
                         .setPositiveButton("OK", null)
                         .show()
@@ -274,7 +272,7 @@ class MantenimientoActivity : AppCompatActivity() {
     private fun mostrarDialogoRestaurar() {
         AlertDialog.Builder(this)
             .setTitle("Restaurar Valores")
-            .setMessage("¿Desea restaurar los valores por defecto de la configuración del servidor?")
+            .setMessage("¿Desea restaurar los valores de la nueva configuración del servidor?")
             .setPositiveButton("Restaurar") { _, _ ->
                 restaurarValoresPorDefecto()
             }
@@ -283,11 +281,12 @@ class MantenimientoActivity : AppCompatActivity() {
     }
 
     private fun restaurarValoresPorDefecto() {
-        binding.etServerIp.setText("192.168.1.100")
+        // Valores por defecto de la nueva configuración
+        binding.etServerIp.setText("10.0.1.39")
         binding.etServerPort.setText("1433")
-        binding.etDatabaseName.setText("ParkingDB")
-        binding.etDbUsername.setText("sa")
-        binding.etDbPassword.setText("")
+        binding.etDatabaseName.setText("Datapark")
+        binding.etDbUsername.setText("pos")
+        binding.etDbPassword.setText("Po\$2025#")
 
         Toast.makeText(this, "Valores restaurados (no guardados)", Toast.LENGTH_SHORT).show()
     }

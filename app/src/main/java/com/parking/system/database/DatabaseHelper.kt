@@ -6,11 +6,11 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.sql.Connection
 import java.sql.DriverManager
-import java.sql.ResultSet
 import java.sql.SQLException
 
 /**
  * Helper para conexión con SQL Server usando JTDS
+ * Actualizado para usar nueva BD: Datapark con prefijo IOT_
  */
 class DatabaseHelper(private val context: Context) {
 
@@ -25,11 +25,11 @@ class DatabaseHelper(private val context: Context) {
     private fun getServerConfig(): ServerConfig {
         val sharedPref = context.getSharedPreferences("ServerConfig", Context.MODE_PRIVATE)
         return ServerConfig(
-            serverIp = sharedPref.getString("server_ip", "10.0.1.6") ?: "10.0.1.6",
+            serverIp = sharedPref.getString("server_ip", "10.0.1.39") ?: "10.0.1.39",
             serverPort = sharedPref.getString("server_port", "1433") ?: "1433",
-            databaseName = sharedPref.getString("database_name", "ParkingDB") ?: "ParkingDB",
-            username = sharedPref.getString("db_username", "replicador") ?: "replicador",
-            password = sharedPref.getString("db_password", "tas%12345") ?: "tas%12345"
+            databaseName = sharedPref.getString("database_name", "Datapark") ?: "Datapark",
+            username = sharedPref.getString("db_username", "pos") ?: "pos",
+            password = sharedPref.getString("db_password", "Po\$2025#") ?: "Po\$2025#"
         )
     }
 
@@ -62,7 +62,7 @@ class DatabaseHelper(private val context: Context) {
             Log.d(TAG, "Intentando conectar a: ${config.serverIp}:${config.serverPort}/${config.databaseName}")
 
             val connection = DriverManager.getConnection(connectionUrl)
-            Log.d(TAG, "✓ Conexión exitosa")
+            Log.d(TAG, "✓ Conexión exitosa a Datapark")
             connection
 
         } catch (e: ClassNotFoundException) {
@@ -98,7 +98,7 @@ class DatabaseHelper(private val context: Context) {
                 statement.close()
                 connection.close()
 
-                ConnectionResult.Success("Conexión exitosa\nSQL Server: ${version.take(50)}...")
+                ConnectionResult.Success("Conexión exitosa a Datapark\nSQL Server: ${version.take(50)}...")
             } else {
                 ConnectionResult.Error("No se pudo establecer conexión")
             }

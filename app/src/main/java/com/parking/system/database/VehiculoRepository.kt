@@ -10,7 +10,7 @@ import java.sql.SQLException
 import java.util.Date
 
 /**
- * Repositorio para operaciones con la tabla Vehiculos
+ * Repositorio para operaciones con la tabla IOT_Vehiculos
  */
 class VehiculoRepository(private val context: Context) {
 
@@ -18,10 +18,7 @@ class VehiculoRepository(private val context: Context) {
     private val TAG = "VehiculoRepository"
 
     /**
-     * Registra la entrada de un vehículo en la base de datos
-     */
-    /**
-     * Registra la entrada de un vehículo en la base de datos
+     * Registra la entrada de un vehículo usando dbo.IOT_sp_RegistrarEntrada
      */
     suspend fun registrarEntrada(
         receiptData: ReceiptData,
@@ -38,8 +35,8 @@ class VehiculoRepository(private val context: Context) {
                     return@withContext DatabaseResult.Error("No se pudo conectar a la base de datos")
                 }
 
-                // Usar procedimiento almacenado actualizado
-                val sql = "{CALL sp_RegistrarEntrada(?, ?, ?, ?, ?)}"
+                // Usar procedimiento almacenado con prefijo IOT_
+                val sql = "{CALL dbo.IOT_sp_RegistrarEntrada(?, ?, ?, ?, ?)}"
                 val callableStatement = connection.prepareCall(sql)
 
                 callableStatement.setString(1, receiptData.plate)
@@ -75,7 +72,7 @@ class VehiculoRepository(private val context: Context) {
     }
 
     /**
-     * Busca un vehículo por placa que esté dentro del parqueo
+     * Busca un vehículo por placa en IOT_Vehiculos
      */
     suspend fun buscarVehiculoPorPlaca(placa: String): VehiculoResult {
         return withContext(Dispatchers.IO) {
@@ -89,7 +86,7 @@ class VehiculoRepository(private val context: Context) {
 
                 val sql = """
                     SELECT TOP 1 Id, Placa, FechaEntrada, CodigoBarras, Estado
-                    FROM Vehiculos 
+                    FROM dbo.IOT_Vehiculos 
                     WHERE Placa = ? AND Estado = 'DENTRO'
                     ORDER BY FechaEntrada DESC
                 """
@@ -134,7 +131,7 @@ class VehiculoRepository(private val context: Context) {
     }
 
     /**
-     * Busca un vehículo por código de barras
+     * Busca un vehículo por código de barras en IOT_Vehiculos
      */
     suspend fun buscarVehiculoPorCodigo(codigo: String): VehiculoResult {
         return withContext(Dispatchers.IO) {
@@ -148,7 +145,7 @@ class VehiculoRepository(private val context: Context) {
 
                 val sql = """
                     SELECT TOP 1 Id, Placa, FechaEntrada, CodigoBarras, Estado
-                    FROM Vehiculos 
+                    FROM dbo.IOT_Vehiculos 
                     WHERE CodigoBarras = ? AND Estado = 'DENTRO'
                     ORDER BY FechaEntrada DESC
                 """
@@ -192,9 +189,8 @@ class VehiculoRepository(private val context: Context) {
         }
     }
 
-
     /**
-     * Registra la salida de un vehículo
+     * Registra la salida de un vehículo usando dbo.IOT_sp_RegistrarSalida
      */
     suspend fun registrarSalida(placa: String, monto: Double, idDispositivo: String): DatabaseResult {
         return withContext(Dispatchers.IO) {
@@ -206,7 +202,7 @@ class VehiculoRepository(private val context: Context) {
                     return@withContext DatabaseResult.Error("No se pudo conectar a la base de datos")
                 }
 
-                val sql = "{CALL sp_RegistrarSalida(?, ?, ?)}"
+                val sql = "{CALL dbo.IOT_sp_RegistrarSalida(?, ?, ?)}"
                 val callableStatement = connection.prepareCall(sql)
 
                 callableStatement.setString(1, placa)
@@ -242,8 +238,9 @@ class VehiculoRepository(private val context: Context) {
             }
         }
     }
+
     /**
-     * Obtiene la tarifa actual
+     * Obtiene la tarifa actual de IOT_Tarifas
      */
     suspend fun obtenerTarifa(): TarifaResult {
         return withContext(Dispatchers.IO) {
@@ -257,7 +254,7 @@ class VehiculoRepository(private val context: Context) {
 
                 val sql = """
                     SELECT TOP 1 PrecioPorHora, PrecioMinimo
-                    FROM Tarifas 
+                    FROM dbo.IOT_Tarifas 
                     WHERE Activa = 1
                 """
 
@@ -291,6 +288,7 @@ class VehiculoRepository(private val context: Context) {
             }
         }
     }
+
     /**
      * Calcula el tiempo de estancia y el monto a pagar
      */
@@ -335,12 +333,6 @@ class VehiculoRepository(private val context: Context) {
     }
 }
 
-
-
-
-
-
-
 /**
  * Clase de datos para vehículo en BD
  */
@@ -384,8 +376,6 @@ sealed class TarifaResult {
     data class Success(val tarifa: Tarifa) : TarifaResult()
     data class Error(val message: String) : TarifaResult()
 }
-
-
 
 /**
  * Resultado del cálculo de monto

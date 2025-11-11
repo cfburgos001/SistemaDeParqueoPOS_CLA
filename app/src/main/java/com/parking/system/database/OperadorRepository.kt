@@ -7,7 +7,7 @@ import kotlinx.coroutines.withContext
 import java.sql.Connection
 
 /**
- * Repositorio para operaciones con Operadores
+ * Repositorio para operaciones con IOT_Operadores
  */
 class OperadorRepository(private val context: Context) {
 
@@ -15,7 +15,7 @@ class OperadorRepository(private val context: Context) {
     private val TAG = "OperadorRepository"
 
     /**
-     * Valida credenciales de un operador
+     * Valida credenciales usando dbo.IOT_sp_ValidarOperador
      */
     suspend fun validarOperador(username: String, password: String): OperadorResult {
         return withContext(Dispatchers.IO) {
@@ -27,7 +27,7 @@ class OperadorRepository(private val context: Context) {
                     return@withContext OperadorResult.Error("No se pudo conectar a la base de datos")
                 }
 
-                val sql = "{CALL sp_ValidarOperador(?, ?)}"
+                val sql = "{CALL dbo.IOT_sp_ValidarOperador(?, ?)}"
                 val callableStatement = connection.prepareCall(sql)
                 callableStatement.setString(1, username)
                 callableStatement.setString(2, password)
@@ -74,7 +74,7 @@ class OperadorRepository(private val context: Context) {
     }
 
     /**
-     * Crea un nuevo operador
+     * Crea un nuevo operador usando dbo.IOT_sp_CrearOperador
      */
     suspend fun crearOperador(
         username: String,
@@ -92,7 +92,7 @@ class OperadorRepository(private val context: Context) {
                     return@withContext DatabaseResult.Error("No se pudo conectar a la base de datos")
                 }
 
-                val sql = "{CALL sp_CrearOperador(?, ?, ?, ?, ?)}"
+                val sql = "{CALL dbo.IOT_sp_CrearOperador(?, ?, ?, ?, ?)}"
                 val callableStatement = connection.prepareCall(sql)
                 callableStatement.setString(1, username)
                 callableStatement.setString(2, password)
@@ -132,7 +132,7 @@ class OperadorRepository(private val context: Context) {
     }
 
     /**
-     * Lista todos los operadores
+     * Lista todos los operadores usando dbo.IOT_sp_ListarOperadores
      */
     suspend fun listarOperadores(): ListaOperadoresResult {
         return withContext(Dispatchers.IO) {
@@ -144,7 +144,7 @@ class OperadorRepository(private val context: Context) {
                     return@withContext ListaOperadoresResult.Error("No se pudo conectar a la base de datos")
                 }
 
-                val sql = "{CALL sp_ListarOperadores}"
+                val sql = "{CALL dbo.IOT_sp_ListarOperadores}"
                 val callableStatement = connection.prepareCall(sql)
                 val resultSet = callableStatement.executeQuery()
 

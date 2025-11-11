@@ -9,6 +9,7 @@ import java.sql.Connection
 
 /**
  * Manager para gestión de dispositivos (Terminales POS)
+ * Actualizado para usar IOT_Dispositivos
  */
 class DispositivoManager(private val context: Context) {
 
@@ -58,7 +59,7 @@ class DispositivoManager(private val context: Context) {
     }
 
     /**
-     * Registra el dispositivo en la base de datos
+     * Registra el dispositivo usando dbo.IOT_sp_RegistrarDispositivo
      */
     suspend fun registrarDispositivo(
         idDispositivo: String,
@@ -76,7 +77,7 @@ class DispositivoManager(private val context: Context) {
 
                 val macAddress = obtenerMacAddress()
 
-                val sql = "{CALL sp_RegistrarDispositivo(?, ?, ?, ?)}"
+                val sql = "{CALL dbo.IOT_sp_RegistrarDispositivo(?, ?, ?, ?)}"
                 val callableStatement = connection.prepareCall(sql)
                 callableStatement.setString(1, idDispositivo)
                 callableStatement.setString(2, nombreDispositivo)
