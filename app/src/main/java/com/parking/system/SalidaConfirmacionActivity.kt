@@ -41,7 +41,12 @@ class SalidaConfirmacionActivity : AppCompatActivity() {
             idDispositivo = dispositivoManager.obtenerIdDispositivo()
         }
 
-        // Obtener datos del vehículo
+        cargarDatosIntent()
+        setupUI()
+        mostrarInformacion()
+    }
+
+    private fun cargarDatosIntent() {
         val vehiculoId = intent.getIntExtra("VEHICULO_ID", -1)
         val placa = intent.getStringExtra("VEHICULO_PLACA") ?: ""
         val fechaEntrada = intent.getLongExtra("VEHICULO_FECHA", 0)
@@ -65,9 +70,6 @@ class SalidaConfirmacionActivity : AppCompatActivity() {
             fechaPago = fechaPago,
             monto = monto
         )
-
-        setupUI()
-        mostrarInformacion()
     }
 
     private fun setupUI() {
@@ -87,13 +89,9 @@ class SalidaConfirmacionActivity : AppCompatActivity() {
     private fun mostrarInformacion() {
         val dateFormat = SimpleDateFormat("dd/MM/yyyy HH:mm", Locale.getDefault())
 
-        // Placa
         binding.tvPlaca.text = vehiculo.placa
-
-        // Fecha de entrada
         binding.tvFechaEntrada.text = dateFormat.format(vehiculo.fechaEntrada)
 
-        // Tiempo de estancia
         val horas = tiempoMinutos / 60
         val minutos = tiempoMinutos % 60
         val tiempoTexto = if (horas > 0) {
@@ -102,26 +100,26 @@ class SalidaConfirmacionActivity : AppCompatActivity() {
             "$minutos minutos"
         }
         binding.tvTiempoEstancia.text = tiempoTexto
-
-        // Monto pagado
         binding.tvMonto.text = String.format("$%.2f", monto)
 
-        // Crear mensaje de información de pago
-        val infoPago = buildString {
-            appendLine("✅ INFORMACIÓN DE PAGO:")
-            appendLine()
-            if (vehiculo.fechaPago != null) {
-                appendLine("📅 Fecha de pago: ${dateFormat.format(vehiculo.fechaPago)}")
-            } else {
-                appendLine("📅 Fecha de pago: No registrada")
-            }
-            appendLine("💳 Estado: ${if (vehiculo.bitPaid == 1) "PAGADO" else "PENDIENTE"}")
-            appendLine("🔑 Tarifa aplicada: ${vehiculo.strRateKey}")
-            appendLine("⏱️ Tiempo total: $tiempoTexto")
+        mostrarInfoPago(dateFormat, tiempoTexto)
+    }
+
+    private fun mostrarInfoPago(dateFormat: SimpleDateFormat, tiempoTexto: String) {
+        val infoPago = StringBuilder()
+        infoPago.append("✅ INFORMACIÓN DE PAGO:\n\n")
+
+        if (vehiculo.fechaPago != null) {
+            infoPago.append("📅 Fecha de pago: ${dateFormat.format(vehiculo.fechaPago)}\n")
+        } else {
+            infoPago.append("📅 Fecha de pago: No registrada\n")
         }
 
-        // Mostrar información adicional en un Toast largo
-        Toast.makeText(this, infoPago, Toast.LENGTH_LONG).show()
+        infoPago.append("💳 Estado: ${if (vehiculo.bitPaid == 1) "PAGADO" else "PENDIENTE"}\n")
+        infoPago.append("🔑 Tarifa aplicada: ${vehiculo.strRateKey}\n")
+        infoPago.append("⏱️ Tiempo total: $tiempoTexto")
+
+        Toast.makeText(this, infoPago.toString(), Toast.LENGTH_LONG).show()
     }
 
     private fun confirmarSalida() {
@@ -129,7 +127,6 @@ class SalidaConfirmacionActivity : AppCompatActivity() {
         binding.btnCancelar.isEnabled = false
 
         lifecycleScope.launch {
-            // Registrar salida SIN monto (ya está registrado por PayStation)
             val result = vehiculoRepository.registrarSalida(vehiculo.placa, idDispositivo)
 
             when (result) {
@@ -140,11 +137,7 @@ class SalidaConfirmacionActivity : AppCompatActivity() {
                         Toast.LENGTH_SHORT
                     ).show()
 
-                    mostrarMensajePluma()
-
-                    delay(3000)
-                    setResult(RESULT_OK)
-                    finish()
+                    levantarPlumaYSalir()
                 }
                 is DatabaseResult.Error -> {
                     Toast.makeText(
@@ -159,7 +152,7 @@ class SalidaConfirmacionActivity : AppCompatActivity() {
         }
     }
 
-    private fun mostrarMensajePluma() {
+    private fun levantarPlumaYSalir() {
         lifecycleScope.launch {
             Toast.makeText(
                 this@SalidaConfirmacionActivity,
@@ -167,8 +160,11 @@ class SalidaConfirmacionActivity : AppCompatActivity() {
                 Toast.LENGTH_LONG
             ).show()
 
-            // Levantar pluma
             PlumaController.levantarPluma(duracionSegundos = 5)
+
+            delay(3000)
+            setResult(RESULT_OK)
+            finish()
         }
     }
 
