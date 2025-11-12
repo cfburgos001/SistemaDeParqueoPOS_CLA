@@ -369,3 +369,4 @@ sealed class CalculoResult {
     ) : CalculoResult()
     data class Error(val message: String) : CalculoResult()
 }
+
