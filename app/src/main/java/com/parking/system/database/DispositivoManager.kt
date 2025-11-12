@@ -51,6 +51,31 @@ class DispositivoManager(private val context: Context) {
     }
 
     /**
+     * Obtiene el tipo de dispositivo
+     */
+    fun obtenerTipoDispositivo(): String {
+        val sharedPref = context.getSharedPreferences("DeviceConfig", Context.MODE_PRIVATE)
+        return sharedPref.getString("tipo_dispositivo", "MIXTO") ?: "MIXTO"
+    }
+
+    /**
+     * Configura el ID numérico del dispositivo
+     */
+    fun configurarIdNumerico(idNumerico: Int) {
+        val sharedPref = context.getSharedPreferences("DeviceConfig", Context.MODE_PRIVATE)
+        sharedPref.edit().putInt("id_numerico", idNumerico).apply()
+        Log.d(TAG, "ID numérico configurado: $idNumerico")
+    }
+
+    /**
+     * Obtiene el ID numérico del dispositivo
+     */
+    fun obtenerIdNumerico(): Int {
+        val sharedPref = context.getSharedPreferences("DeviceConfig", Context.MODE_PRIVATE)
+        return sharedPref.getInt("id_numerico", 0)
+    }
+
+    /**
      * Obtiene el ID del dispositivo para entrada (IdEntryDevice)
      * Según el tipo de dispositivo configurado
      */
@@ -91,38 +116,33 @@ class DispositivoManager(private val context: Context) {
     }
 
     /**
-     * Obtiene el tipo de dispositivo
-     */
-    fun obtenerTipoDispositivo(): String {
-        val sharedPref = context.getSharedPreferences("DeviceConfig", Context.MODE_PRIVATE)
-        return sharedPref.getString("tipo_dispositivo", "MIXTO") ?: "MIXTO"
-    }
-
-    /**
      * Registra el dispositivo usando dbo.IOT_sp_RegistrarDispositivo
+     * VERSIÓN ACTUALIZADA con idNumerico
      */
-    suspend fun registrarDispositivo(
+    suspend fun registrarDispositivoEnBD(
         idDispositivo: String,
         nombreDispositivo: String,
-        tipoDispositivo: String
-    ): DatabaseResult {
-        return withContext(Dispatchers.IO) {
+        tipoDispositivo: String,
+        idNumerico: Int
+    ) {
+        withContext(Dispatchers.IO) {
             var connection: Connection? = null
             try {
                 connection = dbHelper.getConnection()
 
                 if (connection == null) {
-                    return@withContext DatabaseResult.Error("No se pudo conectar a la base de datos")
+                    throw Exception("No se pudo conectar a la base de datos")
                 }
 
                 val macAddress = obtenerMacAddress()
 
-                val sql = "{CALL dbo.IOT_sp_RegistrarDispositivo(?, ?, ?, ?)}"
+                val sql = "{CALL dbo.IOT_sp_RegistrarDispositivo(?, ?, ?, ?, ?)}"
                 val callableStatement = connection.prepareCall(sql)
                 callableStatement.setString(1, idDispositivo)
                 callableStatement.setString(2, nombreDispositivo)
                 callableStatement.setString(3, tipoDispositivo)
                 callableStatement.setString(4, macAddress)
+                callableStatement.setInt(5, idNumerico)
 
                 val resultSet = callableStatement.executeQuery()
 
@@ -130,25 +150,19 @@ class DispositivoManager(private val context: Context) {
                     val id = resultSet.getInt("Id")
                     val mensaje = resultSet.getString("Mensaje")
 
+                    Log.d(TAG, "✓ Dispositivo registrado: $idDispositivo (ID Numérico: $idNumerico) - $mensaje")
+
                     resultSet.close()
                     callableStatement.close()
-
-                    if (id > 0) {
-                        Log.d(TAG, "✓ Dispositivo registrado: $idDispositivo")
-                        DatabaseResult.Success(mensaje)
-                    } else {
-                        Log.d(TAG, "Dispositivo ya existe: $idDispositivo")
-                        DatabaseResult.Success("Dispositivo ya registrado")
-                    }
                 } else {
                     resultSet.close()
                     callableStatement.close()
-                    DatabaseResult.Error("Error al registrar dispositivo")
+                    throw Exception("No se obtuvo respuesta del procedimiento")
                 }
 
             } catch (e: Exception) {
-                Log.e(TAG, "Error al registrar dispositivo", e)
-                DatabaseResult.Error("Error: ${e.message}")
+                Log.e(TAG, "Error al registrar dispositivo en BD", e)
+                throw e
             } finally {
                 dbHelper.closeConnection(connection)
             }

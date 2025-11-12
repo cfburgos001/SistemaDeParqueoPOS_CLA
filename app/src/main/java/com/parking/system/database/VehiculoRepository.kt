@@ -133,7 +133,8 @@ class VehiculoRepository(private val context: Context) {
     }
 
     /**
-     * Busca un vehículo por código de barras en IOT_Vehiculos
+     * Busca un vehículo por código de barras
+     * Ahora incluye verificación de pago (bitPaid)
      */
     suspend fun buscarVehiculoPorCodigo(codigo: String): VehiculoResult {
         return withContext(Dispatchers.IO) {
@@ -146,7 +147,16 @@ class VehiculoRepository(private val context: Context) {
                 }
 
                 val sql = """
-                    SELECT TOP 1 Id, Placa, FechaEntrada, CodigoBarras, Estado
+                    SELECT TOP 1 
+                        Id, 
+                        Placa, 
+                        FechaEntrada, 
+                        CodigoBarras, 
+                        Estado,
+                        bitPaid,
+                        FechaPago,
+                        Monto,
+                        strRateKey
                     FROM dbo.IOT_Vehiculos 
                     WHERE CodigoBarras = ? AND Estado = 'DENTRO'
                     ORDER BY FechaEntrada DESC
@@ -163,13 +173,17 @@ class VehiculoRepository(private val context: Context) {
                         placa = resultSet.getString("Placa"),
                         fechaEntrada = resultSet.getTimestamp("FechaEntrada"),
                         codigoBarras = resultSet.getString("CodigoBarras"),
-                        estado = resultSet.getString("Estado")
+                        estado = resultSet.getString("Estado"),
+                        bitPaid = resultSet.getInt("bitPaid"),
+                        fechaPago = resultSet.getTimestamp("FechaPago"),
+                        monto = resultSet.getBigDecimal("Monto")?.toDouble() ?: 0.0,
+                        strRateKey = resultSet.getString("strRateKey") ?: "A"
                     )
 
                     resultSet.close()
                     preparedStatement.close()
 
-                    Log.d(TAG, "✓ Vehículo encontrado por código: ${vehiculo.placa}")
+                    Log.d(TAG, "✓ Vehículo encontrado por código: ${vehiculo.placa} - Pagado: ${vehiculo.bitPaid == 1}")
                     VehiculoResult.Found(vehiculo)
                 } else {
                     resultSet.close()
@@ -193,8 +207,9 @@ class VehiculoRepository(private val context: Context) {
 
     /**
      * Registra la salida de un vehículo usando dbo.IOT_sp_RegistrarSalida
+     * Ahora solo actualiza el registro de salida (el monto ya fue registrado por PayStation)
      */
-    suspend fun registrarSalida(placa: String, monto: Double, idDispositivo: String): DatabaseResult {
+    suspend fun registrarSalida(placa: String, idDispositivo: String): DatabaseResult {
         return withContext(Dispatchers.IO) {
             var connection: Connection? = null
             try {
@@ -204,12 +219,12 @@ class VehiculoRepository(private val context: Context) {
                     return@withContext DatabaseResult.Error("No se pudo conectar a la base de datos")
                 }
 
-                val sql = "{CALL dbo.IOT_sp_RegistrarSalida(?, ?, ?)}"
+                // Ahora el SP solo necesita placa y dispositivo (el monto ya está registrado)
+                val sql = "{CALL dbo.IOT_sp_RegistrarSalida(?, ?)}"
                 val callableStatement = connection.prepareCall(sql)
 
                 callableStatement.setString(1, placa)
-                callableStatement.setDouble(2, monto)
-                callableStatement.setString(3, idDispositivo)
+                callableStatement.setString(2, idDispositivo)
 
                 val resultSet = callableStatement.executeQuery()
 
@@ -222,7 +237,7 @@ class VehiculoRepository(private val context: Context) {
                 callableStatement.close()
 
                 if (filasAfectadas > 0) {
-                    Log.d(TAG, "✓ Salida registrada - Placa: $placa, Dispositivo: $idDispositivo")
+                    Log.d(TAG, "✓ Salida registrada - Placa: $placa, Dispositivo: $idDispositivo (bitExit=1)")
                     DatabaseResult.Success("Salida registrada correctamente")
                 } else {
                     Log.d(TAG, "✗ No se encontró vehículo para salida: $placa")
@@ -290,61 +305,26 @@ class VehiculoRepository(private val context: Context) {
             }
         }
     }
-
-    /**
-     * Calcula el tiempo de estancia y el monto a pagar
-     */
-    suspend fun calcularMonto(vehiculo: VehiculoDB): CalculoResult {
-        return withContext(Dispatchers.IO) {
-            try {
-                // Obtener tarifa
-                val tarifaResult = obtenerTarifa()
-                val tarifa = when (tarifaResult) {
-                    is TarifaResult.Success -> tarifaResult.tarifa
-                    is TarifaResult.Error -> Tarifa(2.0, 1.0) // Tarifa por defecto
-                }
-
-                // Calcular tiempo en minutos
-                val ahora = Date()
-                val tiempoMinutos = ((ahora.time - vehiculo.fechaEntrada.time) / 60000).toInt()
-                val tiempoHoras = tiempoMinutos / 60.0
-
-                // Calcular monto
-                var monto = tiempoHoras * tarifa.precioPorHora
-
-                // Aplicar precio mínimo
-                if (monto < tarifa.precioMinimo) {
-                    monto = tarifa.precioMinimo
-                }
-
-                // Redondear a 2 decimales
-                monto = (monto * 100).toInt() / 100.0
-
-                Log.d(TAG, "Tiempo: $tiempoMinutos min (${String.format("%.2f", tiempoHoras)} hrs), Monto: $$monto")
-
-                CalculoResult.Success(
-                    tiempoMinutos = tiempoMinutos,
-                    monto = monto
-                )
-
-            } catch (e: Exception) {
-                Log.e(TAG, "Error al calcular monto", e)
-                CalculoResult.Error("Error en cálculo: ${e.message}")
-            }
-        }
-    }
 }
 
 /**
  * Clase de datos para vehículo en BD
+ * Actualizada con campos de pago
  */
 data class VehiculoDB(
     val id: Int,
     val placa: String,
     val fechaEntrada: Date,
     val codigoBarras: String,
-    val estado: String
-)
+    val estado: String,
+    val bitPaid: Int = 0,
+    val fechaPago: Date? = null,
+    val monto: Double = 0.0,
+    val strRateKey: String = "A"
+) {
+    fun estaPagado(): Boolean = bitPaid == 1
+    fun tieneMontoRegistrado(): Boolean = monto > 0
+}
 
 /**
  * Clase de datos para tarifa

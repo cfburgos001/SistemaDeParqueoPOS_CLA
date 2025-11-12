@@ -2,9 +2,7 @@ package com.parking.system
 
 import android.content.Intent
 import android.os.Bundle
-import android.view.LayoutInflater
 import android.widget.Spinner
-import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
@@ -13,7 +11,6 @@ import androidx.lifecycle.lifecycleScope
 import com.google.android.material.textfield.TextInputEditText
 import com.parking.system.database.ConnectionResult
 import com.parking.system.database.DatabaseHelper
-import com.parking.system.database.DatabaseResult
 import com.parking.system.database.DispositivoManager
 import com.parking.system.databinding.ActivityMantenimientoBinding
 import kotlinx.coroutines.launch
@@ -42,18 +39,15 @@ class MantenimientoActivity : AppCompatActivity() {
         supportActionBar?.setDisplayHomeAsUpEnabled(true)
         supportActionBar?.title = "Mantenimiento"
 
-        // Botón Gestión de Usuarios
         binding.btnGestionUsuarios.setOnClickListener {
             val intent = Intent(this, GestionUsuariosActivity::class.java)
             startActivity(intent)
         }
 
-        // Botón Configurar Dispositivo
         binding.btnConfigDispositivo.setOnClickListener {
             mostrarDialogoConfigDispositivo()
         }
 
-        // Listeners para campos del servidor
         binding.etServerIp.addTextChangedListener {
             binding.tilServerIp.error = null
         }
@@ -91,71 +85,120 @@ class MantenimientoActivity : AppCompatActivity() {
         lifecycleScope.launch {
             val idDispositivo = dispositivoManager.obtenerIdDispositivo()
             val tipoDispositivo = dispositivoManager.obtenerTipoDispositivo()
+            val idNumerico = dispositivoManager.obtenerIdNumerico()
 
             binding.tvIdDispositivo.text = idDispositivo
-            binding.tvTipoDispositivo.text = tipoDispositivo
+
+            if (idNumerico > 0) {
+                binding.tvTipoDispositivo.text = "$tipoDispositivo (ID: $idNumerico)"
+            } else {
+                binding.tvTipoDispositivo.text = "$tipoDispositivo (Sin ID numérico)"
+            }
         }
     }
 
     private fun mostrarDialogoConfigDispositivo() {
-        val dialogView = LayoutInflater.from(this).inflate(R.layout.dialog_config_dispositivo, null)
+        val dialogView = layoutInflater.inflate(R.layout.dialog_config_dispositivo, null)
 
-        val tvIdDispositivo = dialogView.findViewById<TextView>(R.id.tvIdDispositivo)
+        val etIdDispositivo = dialogView.findViewById<TextInputEditText>(R.id.etIdDispositivo)
         val etNombreDispositivo = dialogView.findViewById<TextInputEditText>(R.id.etNombreDispositivo)
+        val etIdNumerico = dialogView.findViewById<TextInputEditText>(R.id.etIdNumerico)
         val spinnerTipo = dialogView.findViewById<Spinner>(R.id.spinnerTipoDispositivo)
 
-        // Cargar ID del dispositivo
+        // Cargar valores actuales
         lifecycleScope.launch {
-            val idDispositivo = dispositivoManager.obtenerIdDispositivo()
-            tvIdDispositivo.text = idDispositivo
+            val idActual = dispositivoManager.obtenerIdDispositivo()
+            val idNumerico = dispositivoManager.obtenerIdNumerico()
+            val tipoActual = dispositivoManager.obtenerTipoDispositivo()
+
+            etIdDispositivo.setText(idActual)
+
+            if (idNumerico > 0) {
+                etIdNumerico.setText(idNumerico.toString())
+            }
+
+            // Pre-seleccionar tipo
+            val tipos = resources.getStringArray(R.array.tipos_dispositivo)
+            val posicion = tipos.indexOf(tipoActual)
+            if (posicion >= 0) {
+                spinnerTipo.setSelection(posicion)
+            }
         }
 
-        // Crear el diálogo
         val dialog = AlertDialog.Builder(this)
             .setTitle("Configurar Dispositivo")
             .setView(dialogView)
-            .setPositiveButton("Guardar") { _, _ ->
-                val nombreDispositivo = etNombreDispositivo.text.toString().trim()
-                val tipoDispositivo = spinnerTipo.selectedItem.toString()
-
-                if (nombreDispositivo.isEmpty()) {
-                    Toast.makeText(this, "Ingrese el nombre del dispositivo", Toast.LENGTH_SHORT).show()
-                    return@setPositiveButton
-                }
-
-                // Guardar configuración
-                dispositivoManager.configurarTipoDispositivo(tipoDispositivo)
-
-                // Registrar en BD
-                lifecycleScope.launch {
-                    val idDispositivo = dispositivoManager.obtenerIdDispositivo()
-                    val result = dispositivoManager.registrarDispositivo(
-                        idDispositivo,
-                        nombreDispositivo,
-                        tipoDispositivo
-                    )
-
-                    when (result) {
-                        is DatabaseResult.Success -> {
-                            Toast.makeText(
-                                this@MantenimientoActivity,
-                                result.message,
-                                Toast.LENGTH_SHORT
-                            ).show()
-                            loadDispositivoInfo()
-                        }
-                        is DatabaseResult.Error -> {
-                            Toast.makeText(
-                                this@MantenimientoActivity,
-                                result.message,
-                                Toast.LENGTH_LONG
-                            ).show()
-                        }
-                    }
-                }
-            }
+            .setPositiveButton("Guardar", null)
             .setNegativeButton("Cancelar", null)
             .create()
+
+        dialog.setOnShowListener {
+            val btnGuardar = dialog.getButton(AlertDialog.BUTTON_POSITIVE)
+            btnGuardar.setOnClickListener {
+                val nuevoId = etIdDispositivo.text.toString().trim()
+                val nombre = etNombreDispositivo.text.toString().trim()
+                val tipo = spinnerTipo.selectedItem.toString()
+                val idNumStr = etIdNumerico.text.toString().trim()
+
+                // Validaciones
+                if (nuevoId.isEmpty()) {
+                    Toast.makeText(this, "Ingrese el ID del dispositivo", Toast.LENGTH_SHORT).show()
+                    return@setOnClickListener
+                }
+
+                if (nombre.isEmpty()) {
+                    Toast.makeText(this, "Ingrese el nombre del dispositivo", Toast.LENGTH_SHORT).show()
+                    return@setOnClickListener
+                }
+
+                if (idNumStr.isEmpty()) {
+                    Toast.makeText(this, "Ingrese el ID numérico", Toast.LENGTH_SHORT).show()
+                    return@setOnClickListener
+                }
+
+                val idNum = idNumStr.toIntOrNull()
+                if (idNum == null || idNum <= 0) {
+                    Toast.makeText(this, "ID numérico debe ser mayor a 0", Toast.LENGTH_SHORT).show()
+                    return@setOnClickListener
+                }
+
+                // Guardar configuración LOCAL (SharedPreferences)
+                val sharedPref = getSharedPreferences("DeviceConfig", MODE_PRIVATE)
+                sharedPref.edit().apply {
+                    putString("id_dispositivo", nuevoId)
+                    putInt("id_numerico", idNum)
+                    putString("tipo_dispositivo", tipo)
+                    apply()
+                }
+
+                // Intentar registrar en BD (sin bloquear si falla)
+                lifecycleScope.launch {
+                    try {
+                        dispositivoManager.registrarDispositivoEnBD(
+                            nuevoId,
+                            nombre,
+                            tipo,
+                            idNum
+                        )
+
+                        Toast.makeText(
+                            this@MantenimientoActivity,
+                            "✓ Configuración guardada\nID: $nuevoId\nID Numérico: $idNum\nTipo: $tipo",
+                            Toast.LENGTH_LONG
+                        ).show()
+                    } catch (e: Exception) {
+                        Toast.makeText(
+                            this@MantenimientoActivity,
+                            "⚠ Configuración guardada localmente\n(No se pudo sincronizar con BD)",
+                            Toast.LENGTH_LONG
+                        ).show()
+                    }
+
+                    dialog.dismiss()
+                    loadDispositivoInfo()
+                }
+            }
+        }
 
         dialog.show()
     }
@@ -163,7 +206,6 @@ class MantenimientoActivity : AppCompatActivity() {
     private fun loadServerConfig() {
         val sharedPref = getSharedPreferences("ServerConfig", MODE_PRIVATE)
 
-        // Cargar con valores por defecto de la nueva configuración
         binding.etServerIp.setText(sharedPref.getString("server_ip", "10.0.1.39"))
         binding.etServerPort.setText(sharedPref.getString("server_port", "1433"))
         binding.etDatabaseName.setText(sharedPref.getString("database_name", "Datapark"))
@@ -232,19 +274,16 @@ class MantenimientoActivity : AppCompatActivity() {
             return
         }
 
-        // Guardar temporalmente la configuración
         guardarConfiguracion()
 
-        // Mostrar diálogo de progreso
         val progressDialog = AlertDialog.Builder(this)
             .setTitle("Probando Conexión")
-            .setMessage("Conectando a $serverIp:$serverPort/$databaseName...\nPor favor espere.")
+            .setMessage("Conectando a $serverIp:$serverPort/$databaseName...")
             .setCancelable(false)
             .create()
 
         progressDialog.show()
 
-        // Probar conexión en background
         lifecycleScope.launch {
             val result = databaseHelper.testConnection()
 
@@ -253,7 +292,7 @@ class MantenimientoActivity : AppCompatActivity() {
             when (result) {
                 is ConnectionResult.Success -> {
                     AlertDialog.Builder(this@MantenimientoActivity)
-                        .setTitle("✓ Conexión Exitosa a Datapark")
+                        .setTitle("✓ Conexión Exitosa")
                         .setMessage(result.message)
                         .setPositiveButton("OK", null)
                         .show()
@@ -272,7 +311,7 @@ class MantenimientoActivity : AppCompatActivity() {
     private fun mostrarDialogoRestaurar() {
         AlertDialog.Builder(this)
             .setTitle("Restaurar Valores")
-            .setMessage("¿Desea restaurar los valores de la nueva configuración del servidor?")
+            .setMessage("¿Desea restaurar los valores por defecto?")
             .setPositiveButton("Restaurar") { _, _ ->
                 restaurarValoresPorDefecto()
             }
@@ -281,7 +320,6 @@ class MantenimientoActivity : AppCompatActivity() {
     }
 
     private fun restaurarValoresPorDefecto() {
-        // Valores por defecto de la nueva configuración
         binding.etServerIp.setText("10.0.1.39")
         binding.etServerPort.setText("1433")
         binding.etDatabaseName.setText("Datapark")

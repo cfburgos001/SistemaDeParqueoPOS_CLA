@@ -13,7 +13,8 @@ import com.parking.system.hardware.PlumaController
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
-import java.util.*
+import java.util.Date
+import java.util.Locale
 
 class SalidaConfirmacionActivity : AppCompatActivity() {
 
@@ -23,6 +24,7 @@ class SalidaConfirmacionActivity : AppCompatActivity() {
     private lateinit var vehiculo: VehiculoDB
     private var tiempoMinutos: Int = 0
     private var monto: Double = 0.0
+    private var fechaPago: Date? = null
 
     private lateinit var dispositivoManager: DispositivoManager
     private var idDispositivo: String = ""
@@ -46,13 +48,22 @@ class SalidaConfirmacionActivity : AppCompatActivity() {
         val codigoBarras = intent.getStringExtra("VEHICULO_CODIGO") ?: ""
         tiempoMinutos = intent.getIntExtra("TIEMPO_MINUTOS", 0)
         monto = intent.getDoubleExtra("MONTO", 0.0)
+        val fechaPagoLong = intent.getLongExtra("FECHA_PAGO", 0L)
+        val bitPaid = intent.getIntExtra("BIT_PAID", 0)
+
+        if (fechaPagoLong > 0) {
+            fechaPago = Date(fechaPagoLong)
+        }
 
         vehiculo = VehiculoDB(
             id = vehiculoId,
             placa = placa,
             fechaEntrada = Date(fechaEntrada),
             codigoBarras = codigoBarras,
-            estado = "DENTRO"
+            estado = "DENTRO",
+            bitPaid = bitPaid,
+            fechaPago = fechaPago,
+            monto = monto
         )
 
         setupUI()
@@ -90,8 +101,15 @@ class SalidaConfirmacionActivity : AppCompatActivity() {
             "$minutos minutos"
         }
 
-        // Monto
+        // Monto pagado
         binding.tvMonto.text = String.format("$%.2f", monto)
+
+        // Mostrar info de pago si existe
+        if (vehiculo.fechaPago != null) {
+            val infoPago = "✓ Pagado el ${dateFormat.format(vehiculo.fechaPago)}"
+            // Puedes agregar un TextView para mostrar esto
+            Toast.makeText(this, infoPago, Toast.LENGTH_LONG).show()
+        }
     }
 
     private fun confirmarSalida() {
@@ -99,8 +117,8 @@ class SalidaConfirmacionActivity : AppCompatActivity() {
         binding.btnCancelar.isEnabled = false
 
         lifecycleScope.launch {
-            // Registrar salida con ID de dispositivo
-            val result = vehiculoRepository.registrarSalida(vehiculo.placa, monto, idDispositivo)
+            // Registrar salida SIN monto (ya está registrado por PayStation)
+            val result = vehiculoRepository.registrarSalida(vehiculo.placa, idDispositivo)
 
             when (result) {
                 is DatabaseResult.Success -> {
@@ -137,7 +155,7 @@ class SalidaConfirmacionActivity : AppCompatActivity() {
                 Toast.LENGTH_LONG
             ).show()
 
-            // Levantar pluma (por ahora simulado)
+            // Levantar pluma
             PlumaController.levantarPluma(duracionSegundos = 5)
         }
     }
