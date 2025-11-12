@@ -139,25 +139,219 @@ class SalidaVehiculoActivity : AppCompatActivity() {
     }
 
     private fun verificarPagoYMostrarConfirmacion(vehiculo: VehiculoDB) {
+        // LOG DE DEPURACIÓN
+        android.util.Log.d("SalidaVehiculo", "=== VERIFICANDO PAGO ===")
+        android.util.Log.d("SalidaVehiculo", "Placa: ${vehiculo.placa}")
+        android.util.Log.d("SalidaVehiculo", "bitPaid: ${vehiculo.bitPaid}")
+        android.util.Log.d("SalidaVehiculo", "estaPagado(): ${vehiculo.estaPagado()}")
+        android.util.Log.d("SalidaVehiculo", "Monto: ${vehiculo.monto}")
+
         if (!vehiculo.estaPagado()) {
+            android.util.Log.d("SalidaVehiculo", "NO HA PAGADO - Mostrando alerta")
             mostrarAlertaNoPagado(vehiculo)
             return
         }
 
+        android.util.Log.d("SalidaVehiculo", "YA PAGÓ - Permitiendo salida")
         mostrarConfirmacionSalida(vehiculo)
     }
 
     private fun mostrarAlertaNoPagado(vehiculo: VehiculoDB) {
+        val mensaje = if (vehiculo.monto > 0) {
+            // Tiene monto pero bitPaid = 0
+            """
+            Este vehículo NO ha pagado el ticket.
+            
+            📋 Placa: ${vehiculo.placa}
+            💵 Monto a pagar: ${'
+
+                private fun mostrarConfirmacionSalida(vehiculo: VehiculoDB) {
+                    lifecycleScope.launch {
+                        val ahora = Date()
+                        val tiempoMinutos = ((ahora.time - vehiculo.fechaEntrada.time) / 60000).toInt()
+
+                        val intent = Intent(this@SalidaVehiculoActivity, SalidaConfirmacionActivity::class.java)
+                        intent.putExtra("VEHICULO_ID", vehiculo.id)
+                        intent.putExtra("VEHICULO_PLACA", vehiculo.placa)
+                        intent.putExtra("VEHICULO_FECHA", vehiculo.fechaEntrada.time)
+                        intent.putExtra("VEHICULO_CODIGO", vehiculo.codigoBarras)
+                        intent.putExtra("TIEMPO_MINUTOS", tiempoMinutos)
+                        intent.putExtra("MONTO", vehiculo.monto)
+                        intent.putExtra("FECHA_PAGO", vehiculo.fechaPago?.time ?: 0L)
+                        intent.putExtra("BIT_PAID", vehiculo.bitPaid)
+                        startActivityForResult(intent, REQUEST_CODE_CONFIRMACION)
+
+                        binding.btnRegistrarPorPlaca.isEnabled = true
+                    }
+                }
+
+                private fun iniciarEscaner() {
+                    val integrator = IntentIntegrator(this)
+                    integrator.setDesiredBarcodeFormats(
+                        IntentIntegrator.QR_CODE,
+                        IntentIntegrator.CODE_128
+                    )
+                    integrator.setPrompt("Escanee el código del ticket")
+                    integrator.setCameraId(0)
+                    integrator.setBeepEnabled(true)
+                    integrator.setBarcodeImageEnabled(true)
+                    integrator.setOrientationLocked(false)
+                    integrator.initiateScan()
+                }
+
+                override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
+                    if (requestCode == REQUEST_CODE_CONFIRMACION) {
+                        if (resultCode == RESULT_OK) {
+                            binding.etPlaca.text?.clear()
+                            binding.btnRegistrarPorPlaca.isEnabled = true
+                        } else {
+                            binding.btnRegistrarPorPlaca.isEnabled = true
+                        }
+                        return
+                    }
+
+                    val result = IntentIntegrator.parseActivityResult(requestCode, resultCode, data)
+
+                    if (result != null) {
+                        if (result.contents == null) {
+                            Toast.makeText(this, "Escaneo cancelado", Toast.LENGTH_SHORT).show()
+                        } else {
+                            val codigoEscaneado = result.contents
+
+                            Toast.makeText(
+                                this,
+                                "Código escaneado: $codigoEscaneado",
+                                Toast.LENGTH_SHORT
+                            ).show()
+
+                            if (codigoEscaneado.startsWith("PK-", ignoreCase = true)) {
+                                buscarVehiculoPorCodigo(codigoEscaneado)
+                            } else {
+                                buscarVehiculoPorPlaca(codigoEscaneado)
+                            }
+                        }
+                    } else {
+                        super.onActivityResult(requestCode, resultCode, data)
+                    }
+                }
+
+                override fun onSupportNavigateUp(): Boolean {
+                    onBackPressed()
+                    return true
+                }
+
+                companion object {
+                    private const val REQUEST_CODE_CONFIRMACION = 100
+                }
+            }
+}${String.format("%.2f", vehiculo.monto)}
+            📊 Estado de pago: ${if (vehiculo.bitPaid == 1) "Pagado (bitPaid=1)" else "Pendiente (bitPaid=0)"}
+            
+            ⚠️ El cliente debe dirigirse a la PayStation para realizar el pago antes de salir.
+            """.trimIndent()
+        } else {
+            // No tiene monto registrado
+            """
+            Este vehículo NO tiene monto registrado.
+            
+            📋 Placa: ${vehiculo.placa}
+            💵 Monto: ${'
+
+                private fun mostrarConfirmacionSalida(vehiculo: VehiculoDB) {
+                    lifecycleScope.launch {
+                        val ahora = Date()
+                        val tiempoMinutos = ((ahora.time - vehiculo.fechaEntrada.time) / 60000).toInt()
+
+                        val intent = Intent(this@SalidaVehiculoActivity, SalidaConfirmacionActivity::class.java)
+                        intent.putExtra("VEHICULO_ID", vehiculo.id)
+                        intent.putExtra("VEHICULO_PLACA", vehiculo.placa)
+                        intent.putExtra("VEHICULO_FECHA", vehiculo.fechaEntrada.time)
+                        intent.putExtra("VEHICULO_CODIGO", vehiculo.codigoBarras)
+                        intent.putExtra("TIEMPO_MINUTOS", tiempoMinutos)
+                        intent.putExtra("MONTO", vehiculo.monto)
+                        intent.putExtra("FECHA_PAGO", vehiculo.fechaPago?.time ?: 0L)
+                        intent.putExtra("BIT_PAID", vehiculo.bitPaid)
+                        startActivityForResult(intent, REQUEST_CODE_CONFIRMACION)
+
+                        binding.btnRegistrarPorPlaca.isEnabled = true
+                    }
+                }
+
+                private fun iniciarEscaner() {
+                    val integrator = IntentIntegrator(this)
+                    integrator.setDesiredBarcodeFormats(
+                        IntentIntegrator.QR_CODE,
+                        IntentIntegrator.CODE_128
+                    )
+                    integrator.setPrompt("Escanee el código del ticket")
+                    integrator.setCameraId(0)
+                    integrator.setBeepEnabled(true)
+                    integrator.setBarcodeImageEnabled(true)
+                    integrator.setOrientationLocked(false)
+                    integrator.initiateScan()
+                }
+
+                override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
+                    if (requestCode == REQUEST_CODE_CONFIRMACION) {
+                        if (resultCode == RESULT_OK) {
+                            binding.etPlaca.text?.clear()
+                            binding.btnRegistrarPorPlaca.isEnabled = true
+                        } else {
+                            binding.btnRegistrarPorPlaca.isEnabled = true
+                        }
+                        return
+                    }
+
+                    val result = IntentIntegrator.parseActivityResult(requestCode, resultCode, data)
+
+                    if (result != null) {
+                        if (result.contents == null) {
+                            Toast.makeText(this, "Escaneo cancelado", Toast.LENGTH_SHORT).show()
+                        } else {
+                            val codigoEscaneado = result.contents
+
+                            Toast.makeText(
+                                this,
+                                "Código escaneado: $codigoEscaneado",
+                                Toast.LENGTH_SHORT
+                            ).show()
+
+                            if (codigoEscaneado.startsWith("PK-", ignoreCase = true)) {
+                                buscarVehiculoPorCodigo(codigoEscaneado)
+                            } else {
+                                buscarVehiculoPorPlaca(codigoEscaneado)
+                            }
+                        }
+                    } else {
+                        super.onActivityResult(requestCode, resultCode, data)
+                    }
+                }
+
+                override fun onSupportNavigateUp(): Boolean {
+                    onBackPressed()
+                    return true
+                }
+
+                companion object {
+                    private const val REQUEST_CODE_CONFIRMACION = 100
+                }
+            }
+}0.00
+            📊 Estado de pago: ${if (vehiculo.bitPaid == 1) "Pagado (bitPaid=1)" else "Pendiente (bitPaid=0)"}
+            
+            ⚠️ Debe registrarse el monto en la PayStation antes de permitir la salida.
+            
+            🔍 DEBUG INFO:
+            - ID: ${vehiculo.id}
+            - Código: ${vehiculo.codigoBarras}
+            - bitPaid: ${vehiculo.bitPaid}
+            - Monto: ${vehiculo.monto}
+            """.trimIndent()
+        }
+
         AlertDialog.Builder(this)
             .setTitle("⚠️ Pago Pendiente")
-            .setMessage("""
-                Este vehículo NO ha pagado el ticket.
-                
-                Placa: ${vehiculo.placa}
-                Monto a pagar: ${'$'}${String.format("%.2f", vehiculo.monto)}
-                
-                El cliente debe dirigirse a la PayStation para realizar el pago antes de salir.
-            """.trimIndent())
+            .setMessage(mensaje)
             .setPositiveButton("Entendido") { _, _ ->
                 binding.etPlaca.text?.clear()
                 binding.btnRegistrarPorPlaca.isEnabled = true

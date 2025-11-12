@@ -85,31 +85,43 @@ class SalidaConfirmacionActivity : AppCompatActivity() {
     }
 
     private fun mostrarInformacion() {
+        val dateFormat = SimpleDateFormat("dd/MM/yyyy HH:mm", Locale.getDefault())
+
         // Placa
         binding.tvPlaca.text = vehiculo.placa
 
         // Fecha de entrada
-        val dateFormat = SimpleDateFormat("dd/MM/yyyy HH:mm", Locale.getDefault())
         binding.tvFechaEntrada.text = dateFormat.format(vehiculo.fechaEntrada)
 
         // Tiempo de estancia
         val horas = tiempoMinutos / 60
         val minutos = tiempoMinutos % 60
-        binding.tvTiempoEstancia.text = if (horas > 0) {
+        val tiempoTexto = if (horas > 0) {
             "$horas hora${if (horas > 1) "s" else ""} $minutos min"
         } else {
             "$minutos minutos"
         }
+        binding.tvTiempoEstancia.text = tiempoTexto
 
         // Monto pagado
         binding.tvMonto.text = String.format("$%.2f", monto)
 
-        // Mostrar info de pago si existe
-        if (vehiculo.fechaPago != null) {
-            val infoPago = "✓ Pagado el ${dateFormat.format(vehiculo.fechaPago)}"
-            // Puedes agregar un TextView para mostrar esto
-            Toast.makeText(this, infoPago, Toast.LENGTH_LONG).show()
+        // Crear mensaje de información de pago
+        val infoPago = buildString {
+            appendLine("✅ INFORMACIÓN DE PAGO:")
+            appendLine()
+            if (vehiculo.fechaPago != null) {
+                appendLine("📅 Fecha de pago: ${dateFormat.format(vehiculo.fechaPago)}")
+            } else {
+                appendLine("📅 Fecha de pago: No registrada")
+            }
+            appendLine("💳 Estado: ${if (vehiculo.bitPaid == 1) "PAGADO" else "PENDIENTE"}")
+            appendLine("🔑 Tarifa aplicada: ${vehiculo.strRateKey}")
+            appendLine("⏱️ Tiempo total: $tiempoTexto")
         }
+
+        // Mostrar información adicional en un Toast largo
+        Toast.makeText(this, infoPago, Toast.LENGTH_LONG).show()
     }
 
     private fun confirmarSalida() {

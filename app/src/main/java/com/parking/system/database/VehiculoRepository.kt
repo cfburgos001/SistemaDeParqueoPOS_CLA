@@ -153,10 +153,10 @@ class VehiculoRepository(private val context: Context) {
                         FechaEntrada, 
                         CodigoBarras, 
                         Estado,
-                        bitPaid,
+                        ISNULL(bitPaid, 0) as bitPaid,
                         FechaPago,
-                        Monto,
-                        strRateKey
+                        ISNULL(Monto, 0.0) as Monto,
+                        ISNULL(strRateKey, 'A') as strRateKey
                     FROM dbo.IOT_Vehiculos 
                     WHERE CodigoBarras = ? AND Estado = 'DENTRO'
                     ORDER BY FechaEntrada DESC
@@ -322,8 +322,9 @@ data class VehiculoDB(
     val monto: Double = 0.0,
     val strRateKey: String = "A"
 ) {
-    fun estaPagado(): Boolean = bitPaid == 1
-    fun tieneMontoRegistrado(): Boolean = monto > 0
+    // Un vehículo está pagado si bitPaid = 1 Y tiene monto > 0
+    fun estaPagado(): Boolean = bitPaid == 1 && monto > 0.0
+    fun tieneMontoRegistrado(): Boolean = monto > 0.0
 }
 
 /**
@@ -358,15 +359,3 @@ sealed class TarifaResult {
     data class Success(val tarifa: Tarifa) : TarifaResult()
     data class Error(val message: String) : TarifaResult()
 }
-
-/**
- * Resultado del cálculo de monto
- */
-sealed class CalculoResult {
-    data class Success(
-        val tiempoMinutos: Int,
-        val monto: Double
-    ) : CalculoResult()
-    data class Error(val message: String) : CalculoResult()
-}
-
