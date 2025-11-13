@@ -64,7 +64,29 @@
                 android:layout_height="60dp"
                 android:text="Registrar Entrada e Imprimir Recibo"
                 android:textSize="16sp"
-                app:cornerRadius="12dp"/>
+                app:cornerRadius="12dp"
+                android:layout_marginBottom="16dp"/>
+
+            <!-- ⭐ NUEVO: Botón de Reimpresión -->
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnReimprimir"
+                android:layout_width="match_parent"
+                android:layout_height="60dp"
+                android:text="🖨️ Reimprimir Último Ticket"
+                android:textSize="16sp"
+                app:cornerRadius="12dp"
+                style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+                app:icon="@android:drawable/ic_menu_rotate"
+                app:iconGravity="textStart"/>
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="💡 Use este botón si necesita imprimir nuevamente el último ticket generado"
+                android:textSize="12sp"
+                android:textColor="#757575"
+                android:textAlignment="center"
+                android:layout_marginTop="8dp"/>
         </LinearLayout>
     </ScrollView>
 </LinearLayout>

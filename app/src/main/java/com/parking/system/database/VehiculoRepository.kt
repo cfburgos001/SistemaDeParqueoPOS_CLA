@@ -227,15 +227,16 @@ class VehiculoRepository(private val context: Context) {
     /**
      * Registra la salida de un vehículo usando dbo.IOT_sp_RegistrarSalida
      * Solo actualiza el registro de salida (el monto ya fue registrado por PayStation)
+     * Retorna el IdDispositivoSalida
      */
-    suspend fun registrarSalida(placa: String, idDispositivo: String): DatabaseResult {
+    suspend fun registrarSalida(placa: String, idDispositivo: String): SalidaResult {
         return withContext(Dispatchers.IO) {
             var connection: Connection? = null
             try {
                 connection = dbHelper.getConnection()
 
                 if (connection == null) {
-                    return@withContext DatabaseResult.Error("No se pudo conectar a la base de datos")
+                    return@withContext SalidaResult.Error("No se pudo conectar a la base de datos")
                 }
 
                 val sql = "{CALL dbo.IOT_sp_RegistrarSalida(?, ?)}"
@@ -247,27 +248,30 @@ class VehiculoRepository(private val context: Context) {
                 val resultSet = callableStatement.executeQuery()
 
                 var filasAfectadas = 0
+                var idDispositivoSalida = ""
+
                 if (resultSet.next()) {
                     filasAfectadas = resultSet.getInt("FilasAfectadas")
+                    idDispositivoSalida = resultSet.getString("IdDispositivoSalida") ?: ""
                 }
 
                 resultSet.close()
                 callableStatement.close()
 
                 if (filasAfectadas > 0) {
-                    Log.d(TAG, "✓ Salida registrada - Placa: $placa, Dispositivo: $idDispositivo")
-                    DatabaseResult.Success("Salida registrada correctamente")
+                    Log.d(TAG, "✓ Salida registrada - Placa: $placa, IdDispositivoSalida: $idDispositivoSalida")
+                    SalidaResult.Success("Salida registrada correctamente", idDispositivoSalida)
                 } else {
                     Log.d(TAG, "✗ No se encontró vehículo para salida: $placa")
-                    DatabaseResult.Error("No se encontró el vehículo en el sistema")
+                    SalidaResult.Error("No se encontró el vehículo en el sistema")
                 }
 
             } catch (e: SQLException) {
                 Log.e(TAG, "Error SQL al registrar salida", e)
-                DatabaseResult.Error("Error SQL: ${e.message}")
+                SalidaResult.Error("Error SQL: ${e.message}")
             } catch (e: Exception) {
                 Log.e(TAG, "Error al registrar salida", e)
-                DatabaseResult.Error("Error: ${e.message}")
+                SalidaResult.Error("Error: ${e.message}")
             } finally {
                 dbHelper.closeConnection(connection)
             }
@@ -367,6 +371,14 @@ data class Tarifa(
 sealed class DatabaseResult {
     data class Success(val message: String) : DatabaseResult()
     data class Error(val message: String) : DatabaseResult()
+}
+
+/**
+ * Resultado de salida de vehículo (incluye IdDispositivoSalida)
+ */
+sealed class SalidaResult {
+    data class Success(val message: String, val idDispositivoSalida: String) : SalidaResult()
+    data class Error(val message: String) : SalidaResult()
 }
 
 /**

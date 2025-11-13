@@ -145,7 +145,7 @@ class SalidaVehiculoActivity : AppCompatActivity() {
     private fun procesarVehiculo(vehiculo: VehiculoDB) {
         android.util.Log.d("SalidaVehiculo", "Placa: ${vehiculo.placa}")
         android.util.Log.d("SalidaVehiculo", "bitPaid: ${vehiculo.bitPaid}")
-        android.util.Log.d("SalidaVehiculo", "bitpaid: ${vehiculo.bitpaid}")
+
         android.util.Log.d("SalidaVehiculo", "Monto: ${vehiculo.monto}")
         android.util.Log.d("SalidaVehiculo", "estaPagado: ${vehiculo.estaPagado()}")
 
@@ -205,7 +205,7 @@ class SalidaVehiculoActivity : AppCompatActivity() {
             intent.putExtra("MONTO", vehiculo.monto)
             intent.putExtra("FECHA_PAGO", vehiculo.fechaPago?.time ?: 0L)
             intent.putExtra("BIT_PAID", vehiculo.bitPaid)
-            intent.putExtra("BIT_PAID3", vehiculo.bitpaid) // ⭐ AQUÍ se pasa bitpaid
+
             intent.putExtra("TIEMPO_ESTANCIA", vehiculo.tiempoEstancia) // ⭐ AQUÍ se pasa TiempoEstancia
             startActivityForResult(intent, REQUEST_CODE_CONFIRMACION)
 

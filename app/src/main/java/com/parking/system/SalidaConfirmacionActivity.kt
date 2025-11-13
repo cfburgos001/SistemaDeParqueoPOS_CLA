@@ -4,7 +4,6 @@ import android.os.Bundle
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.lifecycleScope
-import com.parking.system.database.DatabaseResult
 import com.parking.system.database.DispositivoManager
 import com.parking.system.database.VehiculoDB
 import com.parking.system.database.VehiculoRepository
@@ -25,7 +24,6 @@ class SalidaConfirmacionActivity : AppCompatActivity() {
     private var tiempoMinutos: Int = 0
     private var monto: Double = 0.0
     private var fechaPago: Date? = null
-    private var bitpaid: Int = 0 // ⭐ Lugar de pago
 
     private lateinit var dispositivoManager: DispositivoManager
     private var idDispositivo: String = ""
@@ -56,7 +54,6 @@ class SalidaConfirmacionActivity : AppCompatActivity() {
         monto = intent.getDoubleExtra("MONTO", 0.0)
         val fechaPagoLong = intent.getLongExtra("FECHA_PAGO", 0L)
         val bitPaid = intent.getIntExtra("BIT_PAID", 0)
-        bitpaid = intent.getIntExtra("BIT_PAID3", 0) // ⭐ RECIBIR bitpaid
 
         if (fechaPagoLong > 0) {
             fechaPago = Date(fechaPagoLong)
@@ -69,7 +66,6 @@ class SalidaConfirmacionActivity : AppCompatActivity() {
             codigoBarras = codigoBarras,
             estado = "DENTRO",
             bitPaid = bitPaid,
-
             fechaPago = fechaPago,
             monto = monto
         )
@@ -108,15 +104,6 @@ class SalidaConfirmacionActivity : AppCompatActivity() {
         }
         binding.tvTiempoEstancia.text = tiempoTexto
 
-        // ⭐ Lugar de pago (bitpaid)
-        val lugarPago = when (bitpaid) {
-            1 -> "PayStation"
-            2 -> "App Móvil"
-            3 -> "Web"
-            else -> "No especificado"
-        }
-        binding.tvLugarPago.text = lugarPago
-
         // Monto pagado
         binding.tvMonto.text = String.format("$%.2f", monto)
     }
@@ -129,16 +116,18 @@ class SalidaConfirmacionActivity : AppCompatActivity() {
             val result = vehiculoRepository.registrarSalida(vehiculo.placa, idDispositivo)
 
             when (result) {
-                is DatabaseResult.Success -> {
+                is com.parking.system.database.SalidaResult.Success -> {
                     Toast.makeText(
                         this@SalidaConfirmacionActivity,
-                        "✓ Salida registrada correctamente",
-                        Toast.LENGTH_SHORT
+                        "✓ Salida registrada\nDispositivo: ${result.idDispositivoSalida}",
+                        Toast.LENGTH_LONG
                     ).show()
+
+                    android.util.Log.d("SalidaConfirmacion", "IdDispositivoSalida: ${result.idDispositivoSalida}")
 
                     levantarPlumaYSalir()
                 }
-                is DatabaseResult.Error -> {
+                is com.parking.system.database.SalidaResult.Error -> {
                     Toast.makeText(
                         this@SalidaConfirmacionActivity,
                         "✗ Error: ${result.message}",

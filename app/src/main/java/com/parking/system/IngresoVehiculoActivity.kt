@@ -23,6 +23,9 @@ class IngresoVehiculoActivity : AppCompatActivity() {
     private var nombreOperador: String = ""
     private var idDispositivo: String = ""
 
+    // Variable para guardar el último ticket impreso
+    private var ultimoTicketImpreso: ReceiptData? = null
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         binding = ActivityIngresoVehiculoBinding.inflate(layoutInflater)
@@ -37,7 +40,6 @@ class IngresoVehiculoActivity : AppCompatActivity() {
     }
 
     private fun verificarTipoDispositivo() {
-        // Verificar si el dispositivo puede registrar entradas
         if (!dispositivoManager.puedeRegistrarEntrada()) {
             Toast.makeText(
                 this,
@@ -45,7 +47,6 @@ class IngresoVehiculoActivity : AppCompatActivity() {
                 Toast.LENGTH_LONG
             ).show()
 
-            // Opcional: cerrar la actividad después de 2 segundos
             binding.btnRegistrarEntrada.isEnabled = false
             binding.etPlaca.isEnabled = false
         }
@@ -81,6 +82,14 @@ class IngresoVehiculoActivity : AppCompatActivity() {
         binding.btnRegistrarEntrada.setOnClickListener {
             registrarEntrada()
         }
+
+        // ⭐ NUEVO: Botón de reimpresión
+        binding.btnReimprimir.setOnClickListener {
+            reimprimirUltimoTicket()
+        }
+
+        // Inicialmente deshabilitar botón de reimpresión
+        binding.btnReimprimir.isEnabled = false
     }
 
     private fun registrarEntrada() {
@@ -114,21 +123,27 @@ class IngresoVehiculoActivity : AppCompatActivity() {
 
             when (result) {
                 is DatabaseResult.Success -> {
-                    // 1. Imprimir ticket
+                    // 1. Guardar como último ticket impreso
+                    ultimoTicketImpreso = receiptData
+
+                    // 2. Imprimir ticket
                     printReceipt(receiptData)
 
-                    // 2. Mostrar mensaje de éxito
+                    // 3. Mostrar mensaje de éxito
                     Toast.makeText(
                         this@IngresoVehiculoActivity,
                         "✓ Entrada registrada exitosamente",
                         Toast.LENGTH_SHORT
                     ).show()
 
-                    // 3. Levantar la pluma
+                    // 4. Levantar la pluma
                     levantarPluma()
 
-                    // 4. Limpiar campo
+                    // 5. Limpiar campo
                     binding.etPlaca.text?.clear()
+
+                    // 6. Habilitar botón de reimpresión
+                    binding.btnReimprimir.isEnabled = true
                 }
                 is DatabaseResult.Error -> {
                     Toast.makeText(
@@ -137,15 +152,45 @@ class IngresoVehiculoActivity : AppCompatActivity() {
                         Toast.LENGTH_LONG
                     ).show()
 
-                    // Aún así imprimir ticket y levantar pluma
+                    // Aún así imprimir ticket, levantar pluma y guardar para reimpresión
+                    ultimoTicketImpreso = receiptData
                     printReceipt(receiptData)
                     levantarPluma()
                     binding.etPlaca.text?.clear()
+                    binding.btnReimprimir.isEnabled = true
                 }
             }
 
             binding.btnRegistrarEntrada.isEnabled = true
         }
+    }
+
+    /**
+     * ⭐ NUEVA FUNCIÓN: Reimprime el último ticket
+     */
+    private fun reimprimirUltimoTicket() {
+        if (ultimoTicketImpreso == null) {
+            Toast.makeText(
+                this,
+                "No hay ticket para reimprimir",
+                Toast.LENGTH_SHORT
+            ).show()
+            return
+        }
+
+        Toast.makeText(
+            this,
+            "🖨️ Reimprimiendo ticket...",
+            Toast.LENGTH_SHORT
+        ).show()
+
+        printReceipt(ultimoTicketImpreso!!)
+
+        Toast.makeText(
+            this,
+            "✓ Ticket reimpreso",
+            Toast.LENGTH_SHORT
+        ).show()
     }
 
     private fun generateUniqueId(): String {
@@ -173,7 +218,6 @@ class IngresoVehiculoActivity : AppCompatActivity() {
                 Toast.LENGTH_LONG
             ).show()
 
-            // Levantar pluma por 5 segundos
             val exito = PlumaController.levantarPluma(duracionSegundos = 5)
 
             if (exito) {
