@@ -31,6 +31,7 @@
             android:orientation="vertical"
             android:padding="24dp">
 
+            <!-- Card de Información del Vehículo -->
             <com.google.android.material.card.MaterialCardView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
@@ -53,6 +54,7 @@
                         android:textColor="#0D47A1"
                         android:layout_marginBottom="16dp"/>
 
+                    <!-- Placa -->
                     <LinearLayout
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
@@ -77,6 +79,7 @@
                             android:textColor="#212121"/>
                     </LinearLayout>
 
+                    <!-- Hora de Entrada -->
                     <LinearLayout
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
@@ -100,10 +103,12 @@
                             android:textColor="#212121"/>
                     </LinearLayout>
 
+                    <!-- Tiempo de Estancia -->
                     <LinearLayout
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:orientation="horizontal">
+                        android:orientation="horizontal"
+                        android:layout_marginBottom="12dp">
 
                         <TextView
                             android:layout_width="0dp"
@@ -122,16 +127,40 @@
                             android:textStyle="bold"
                             android:textColor="#212121"/>
                     </LinearLayout>
+
+                    <!-- ⭐ NUEVO: Pagado en -->
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal">
+
+                        <TextView
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:text="Pagado en:"
+                            android:textSize="16sp"
+                            android:textColor="#757575"/>
+
+                        <TextView
+                            android:id="@+id/tvLugarPago"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="PayStation"
+                            android:textSize="16sp"
+                            android:textStyle="bold"
+                            android:textColor="#4CAF50"/>
+                    </LinearLayout>
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
 
+            <!-- Card de Monto PAGADO -->
             <com.google.android.material.card.MaterialCardView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 app:cardCornerRadius="16dp"
                 app:cardElevation="4dp"
-                app:cardBackgroundColor="#4CAF50"
-                android:layout_marginBottom="24dp">
+                app:cardBackgroundColor="#4CAF50">
 
                 <LinearLayout
                     android:layout_width="match_parent"
@@ -143,7 +172,7 @@
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="MONTO A PAGAR"
+                        android:text="MONTO PAGADO"
                         android:textSize="16sp"
                         android:textColor="@android:color/white"
                         android:layout_marginBottom="8dp"/>
@@ -159,19 +188,10 @@
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
 
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="¿El cliente ya pagó?"
-                android:textSize="18sp"
-                android:textStyle="bold"
-                android:textColor="#212121"
-                android:layout_marginBottom="16dp"
-                android:layout_gravity="center"/>
-
         </LinearLayout>
     </ScrollView>
 
+    <!-- Botones -->
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
@@ -196,7 +216,7 @@
             android:layout_width="0dp"
             android:layout_height="60dp"
             android:layout_weight="1"
-            android:text="SÍ, YA PAGÓ"
+            android:text="VALIDAR"
             android:textSize="16sp"
             app:cornerRadius="12dp"
             android:layout_marginStart="8dp"/>

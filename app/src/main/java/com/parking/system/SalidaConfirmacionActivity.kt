@@ -25,6 +25,7 @@ class SalidaConfirmacionActivity : AppCompatActivity() {
     private var tiempoMinutos: Int = 0
     private var monto: Double = 0.0
     private var fechaPago: Date? = null
+    private var bitpaid: Int = 0 // ⭐ Lugar de pago
 
     private lateinit var dispositivoManager: DispositivoManager
     private var idDispositivo: String = ""
@@ -55,6 +56,7 @@ class SalidaConfirmacionActivity : AppCompatActivity() {
         monto = intent.getDoubleExtra("MONTO", 0.0)
         val fechaPagoLong = intent.getLongExtra("FECHA_PAGO", 0L)
         val bitPaid = intent.getIntExtra("BIT_PAID", 0)
+        bitpaid = intent.getIntExtra("BIT_PAID3", 0) // ⭐ RECIBIR bitpaid
 
         if (fechaPagoLong > 0) {
             fechaPago = Date(fechaPagoLong)
@@ -67,6 +69,7 @@ class SalidaConfirmacionActivity : AppCompatActivity() {
             codigoBarras = codigoBarras,
             estado = "DENTRO",
             bitPaid = bitPaid,
+
             fechaPago = fechaPago,
             monto = monto
         )
@@ -89,9 +92,13 @@ class SalidaConfirmacionActivity : AppCompatActivity() {
     private fun mostrarInformacion() {
         val dateFormat = SimpleDateFormat("dd/MM/yyyy HH:mm", Locale.getDefault())
 
+        // Placa
         binding.tvPlaca.text = vehiculo.placa
+
+        // Fecha de entrada
         binding.tvFechaEntrada.text = dateFormat.format(vehiculo.fechaEntrada)
 
+        // Tiempo de estancia
         val horas = tiempoMinutos / 60
         val minutos = tiempoMinutos % 60
         val tiempoTexto = if (horas > 0) {
@@ -100,26 +107,18 @@ class SalidaConfirmacionActivity : AppCompatActivity() {
             "$minutos minutos"
         }
         binding.tvTiempoEstancia.text = tiempoTexto
-        binding.tvMonto.text = String.format("$%.2f", monto)
 
-        mostrarInfoPago(dateFormat, tiempoTexto)
-    }
-
-    private fun mostrarInfoPago(dateFormat: SimpleDateFormat, tiempoTexto: String) {
-        val infoPago = StringBuilder()
-        infoPago.append("✅ INFORMACIÓN DE PAGO:\n\n")
-
-        if (vehiculo.fechaPago != null) {
-            infoPago.append("📅 Fecha de pago: ${dateFormat.format(vehiculo.fechaPago)}\n")
-        } else {
-            infoPago.append("📅 Fecha de pago: No registrada\n")
+        // ⭐ Lugar de pago (bitpaid)
+        val lugarPago = when (bitpaid) {
+            1 -> "PayStation"
+            2 -> "App Móvil"
+            3 -> "Web"
+            else -> "No especificado"
         }
+        binding.tvLugarPago.text = lugarPago
 
-        infoPago.append("💳 Estado: ${if (vehiculo.bitPaid == 1) "PAGADO" else "PENDIENTE"}\n")
-        infoPago.append("🔑 Tarifa aplicada: ${vehiculo.strRateKey}\n")
-        infoPago.append("⏱️ Tiempo total: $tiempoTexto")
-
-        Toast.makeText(this, infoPago.toString(), Toast.LENGTH_LONG).show()
+        // Monto pagado
+        binding.tvMonto.text = String.format("$%.2f", monto)
     }
 
     private fun confirmarSalida() {

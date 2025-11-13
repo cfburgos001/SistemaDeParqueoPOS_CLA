@@ -19,7 +19,6 @@ class VehiculoRepository(private val context: Context) {
 
     /**
      * Registra la entrada de un vehículo usando dbo.IOT_sp_RegistrarEntrada
-     * Ahora incluye IdEntryDevice y bitEntry según el tipo de dispositivo
      */
     suspend fun registrarEntrada(
         receiptData: ReceiptData,
@@ -36,8 +35,6 @@ class VehiculoRepository(private val context: Context) {
                     return@withContext DatabaseResult.Error("No se pudo conectar a la base de datos")
                 }
 
-                // Usar procedimiento almacenado con prefijo IOT_
-                // El SP ya maneja IdEntryDevice y bitEntry = 1 automáticamente
                 val sql = "{CALL dbo.IOT_sp_RegistrarEntrada(?, ?, ?, ?, ?)}"
                 val callableStatement = connection.prepareCall(sql)
 
@@ -57,7 +54,7 @@ class VehiculoRepository(private val context: Context) {
                 resultSet.close()
                 callableStatement.close()
 
-                Log.d(TAG, "✓ Entrada registrada - ID: $id, Placa: ${receiptData.plate}, Operador: $idOperador, Dispositivo: $idDispositivo (bitEntry=1)")
+                Log.d(TAG, "✓ Entrada registrada - ID: $id, Placa: ${receiptData.plate}")
 
                 DatabaseResult.Success("Entrada registrada correctamente. ID: $id")
 
@@ -75,6 +72,7 @@ class VehiculoRepository(private val context: Context) {
 
     /**
      * Busca un vehículo por placa en IOT_Vehiculos
+     * INCLUYE: bitPaid, bitpaid, TiempoEstancia
      */
     suspend fun buscarVehiculoPorPlaca(placa: String): VehiculoResult {
         return withContext(Dispatchers.IO) {
@@ -87,7 +85,18 @@ class VehiculoRepository(private val context: Context) {
                 }
 
                 val sql = """
-                    SELECT TOP 1 Id, Placa, FechaEntrada, CodigoBarras, Estado
+                    SELECT TOP 1 
+                        Id, 
+                        Placa, 
+                        FechaEntrada, 
+                        CodigoBarras, 
+                        Estado,
+                        ISNULL(bitPaid, 0) as bitPaid,
+                        ISNULL(bitpaid, 0) as bitpaid,
+                        FechaPago,
+                        ISNULL(Monto, 0.0) as Monto,
+                        ISNULL(strRateKey, 'A') as strRateKey,
+                        ISNULL(TiempoEstancia, 0) as TiempoEstancia
                     FROM dbo.IOT_Vehiculos 
                     WHERE Placa = ? AND Estado = 'DENTRO'
                     ORDER BY FechaEntrada DESC
@@ -104,13 +113,19 @@ class VehiculoRepository(private val context: Context) {
                         placa = resultSet.getString("Placa"),
                         fechaEntrada = resultSet.getTimestamp("FechaEntrada"),
                         codigoBarras = resultSet.getString("CodigoBarras"),
-                        estado = resultSet.getString("Estado")
+                        estado = resultSet.getString("Estado"),
+                        bitPaid = resultSet.getInt("bitPaid"),
+                        bitpaid = resultSet.getInt("bitpaid"),
+                        fechaPago = resultSet.getTimestamp("FechaPago"),
+                        monto = resultSet.getBigDecimal("Monto")?.toDouble() ?: 0.0,
+                        strRateKey = resultSet.getString("strRateKey") ?: "A",
+                        tiempoEstancia = resultSet.getInt("TiempoEstancia")
                     )
 
                     resultSet.close()
                     preparedStatement.close()
 
-                    Log.d(TAG, "✓ Vehículo encontrado: ${vehiculo.placa}")
+                    Log.d(TAG, "✓ Vehículo encontrado: ${vehiculo.placa} - bitPaid: ${vehiculo.bitPaid} - bitpaid: ${vehiculo.bitpaid} - Monto: ${vehiculo.monto}")
                     VehiculoResult.Found(vehiculo)
                 } else {
                     resultSet.close()
@@ -134,7 +149,7 @@ class VehiculoRepository(private val context: Context) {
 
     /**
      * Busca un vehículo por código de barras
-     * Ahora incluye verificación de pago (bitPaid)
+     * INCLUYE: bitPaid, bitpaid, TiempoEstancia
      */
     suspend fun buscarVehiculoPorCodigo(codigo: String): VehiculoResult {
         return withContext(Dispatchers.IO) {
@@ -154,9 +169,11 @@ class VehiculoRepository(private val context: Context) {
                         CodigoBarras, 
                         Estado,
                         ISNULL(bitPaid, 0) as bitPaid,
+                        ISNULL(bitpaid, 0) as bitpaid,
                         FechaPago,
                         ISNULL(Monto, 0.0) as Monto,
-                        ISNULL(strRateKey, 'A') as strRateKey
+                        ISNULL(strRateKey, 'A') as strRateKey,
+                        ISNULL(TiempoEstancia, 0) as TiempoEstancia
                     FROM dbo.IOT_Vehiculos 
                     WHERE CodigoBarras = ? AND Estado = 'DENTRO'
                     ORDER BY FechaEntrada DESC
@@ -175,15 +192,17 @@ class VehiculoRepository(private val context: Context) {
                         codigoBarras = resultSet.getString("CodigoBarras"),
                         estado = resultSet.getString("Estado"),
                         bitPaid = resultSet.getInt("bitPaid"),
+                        bitpaid = resultSet.getInt("bitpaid"),
                         fechaPago = resultSet.getTimestamp("FechaPago"),
                         monto = resultSet.getBigDecimal("Monto")?.toDouble() ?: 0.0,
-                        strRateKey = resultSet.getString("strRateKey") ?: "A"
+                        strRateKey = resultSet.getString("strRateKey") ?: "A",
+                        tiempoEstancia = resultSet.getInt("TiempoEstancia")
                     )
 
                     resultSet.close()
                     preparedStatement.close()
 
-                    Log.d(TAG, "✓ Vehículo encontrado por código: ${vehiculo.placa} - Pagado: ${vehiculo.bitPaid == 1}")
+                    Log.d(TAG, "✓ Vehículo encontrado por código: ${vehiculo.placa} - bitpaid: ${vehiculo.bitpaid}")
                     VehiculoResult.Found(vehiculo)
                 } else {
                     resultSet.close()
@@ -207,7 +226,7 @@ class VehiculoRepository(private val context: Context) {
 
     /**
      * Registra la salida de un vehículo usando dbo.IOT_sp_RegistrarSalida
-     * Ahora solo actualiza el registro de salida (el monto ya fue registrado por PayStation)
+     * Solo actualiza el registro de salida (el monto ya fue registrado por PayStation)
      */
     suspend fun registrarSalida(placa: String, idDispositivo: String): DatabaseResult {
         return withContext(Dispatchers.IO) {
@@ -219,7 +238,6 @@ class VehiculoRepository(private val context: Context) {
                     return@withContext DatabaseResult.Error("No se pudo conectar a la base de datos")
                 }
 
-                // Ahora el SP solo necesita placa y dispositivo (el monto ya está registrado)
                 val sql = "{CALL dbo.IOT_sp_RegistrarSalida(?, ?)}"
                 val callableStatement = connection.prepareCall(sql)
 
@@ -237,7 +255,7 @@ class VehiculoRepository(private val context: Context) {
                 callableStatement.close()
 
                 if (filasAfectadas > 0) {
-                    Log.d(TAG, "✓ Salida registrada - Placa: $placa, Dispositivo: $idDispositivo (bitExit=1)")
+                    Log.d(TAG, "✓ Salida registrada - Placa: $placa, Dispositivo: $idDispositivo")
                     DatabaseResult.Success("Salida registrada correctamente")
                 } else {
                     Log.d(TAG, "✗ No se encontró vehículo para salida: $placa")
@@ -292,13 +310,11 @@ class VehiculoRepository(private val context: Context) {
                     resultSet.close()
                     statement.close()
 
-                    // Tarifa por defecto si no hay en BD
                     TarifaResult.Success(Tarifa(2.0, 1.0))
                 }
 
             } catch (e: Exception) {
                 Log.e(TAG, "Error al obtener tarifa", e)
-                // Tarifa por defecto en caso de error
                 TarifaResult.Success(Tarifa(2.0, 1.0))
             } finally {
                 dbHelper.closeConnection(connection)
@@ -309,7 +325,7 @@ class VehiculoRepository(private val context: Context) {
 
 /**
  * Clase de datos para vehículo en BD
- * Actualizada con campos de pago
+ * INCLUYE: bitpaid, tiempoEstancia
  */
 data class VehiculoDB(
     val id: Int,
@@ -318,13 +334,23 @@ data class VehiculoDB(
     val codigoBarras: String,
     val estado: String,
     val bitPaid: Int = 0,
+    val bitpaid: Int = 0, // Dónde se pagó
     val fechaPago: Date? = null,
     val monto: Double = 0.0,
-    val strRateKey: String = "A"
+    val strRateKey: String = "A",
+    val tiempoEstancia: Int = 0 // En minutos
 ) {
-    // Un vehículo está pagado si bitPaid = 1 Y tiene monto > 0
     fun estaPagado(): Boolean = bitPaid == 1 && monto > 0.0
     fun tieneMontoRegistrado(): Boolean = monto > 0.0
+
+    fun getLugarPago(): String {
+        return when (bitpaid) {
+            1 -> "PayStation"
+            2 -> "App Móvil"
+            3 -> "Web"
+            else -> "No especificado"
+        }
+    }
 }
 
 /**

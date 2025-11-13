@@ -83,7 +83,7 @@ object PrinterManager {
         out.write("CENTRO PANAMERICANO DE OJOS\n".utf8())
         out.write("TICKET DE INGRESO\n".utf8())
         out.write(byteArrayOf(0x1B, 0x45, 0x00))
-        out.write("========================\n".utf8())
+        out.write("============================\n".utf8())
         out.write("\n".utf8())
 
         // CODE128 - ESCANEABLE (imprime solo la PLACA para mejor lectura)
@@ -107,13 +107,14 @@ object PrinterManager {
         out.write("ID: ${data.uniqueId}\n".utf8())
 
         // Footer
-        out.write("========================\n".utf8())
         out.write(byteArrayOf(0x1B, 0x61, 0x01)) // Centrar
+        out.write("============================\n".utf8())
         out.write(byteArrayOf(0x1B, 0x45, 0x01))
         out.write("VALIDAR ESTE TICKET\n".utf8())
         out.write("PARA SU SALIDA\n".utf8())
         out.write(byteArrayOf(0x1B, 0x45, 0x00))
-        out.write("========================\n".utf8())
+        out.write("============================\n".utf8())
+
 
         out.write("\n\n\n".utf8())
 
