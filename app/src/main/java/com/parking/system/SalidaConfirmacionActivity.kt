@@ -24,6 +24,7 @@ class SalidaConfirmacionActivity : AppCompatActivity() {
     private var tiempoMinutos: Int = 0
     private var monto: Double = 0.0
     private var fechaPago: Date? = null
+    private var bitPaid: Int = 0 // ⭐ Para validar si pagó
 
     private lateinit var dispositivoManager: DispositivoManager
     private var idDispositivo: String = ""
@@ -53,7 +54,7 @@ class SalidaConfirmacionActivity : AppCompatActivity() {
         tiempoMinutos = intent.getIntExtra("TIEMPO_MINUTOS", 0)
         monto = intent.getDoubleExtra("MONTO", 0.0)
         val fechaPagoLong = intent.getLongExtra("FECHA_PAGO", 0L)
-        val bitPaid = intent.getIntExtra("BIT_PAID", 0)
+        bitPaid = intent.getIntExtra("BIT_PAID", 0) // ⭐ Leer bitPaid
 
         if (fechaPagoLong > 0) {
             fechaPago = Date(fechaPagoLong)
@@ -94,6 +95,13 @@ class SalidaConfirmacionActivity : AppCompatActivity() {
         // Fecha de entrada
         binding.tvFechaEntrada.text = dateFormat.format(vehiculo.fechaEntrada)
 
+        // ⭐ Hora de pago (NUEVO)
+        if (fechaPago != null) {
+            binding.tvHoraPago.text = dateFormat.format(fechaPago)
+        } else {
+            binding.tvHoraPago.text = "No registrada"
+        }
+
         // Tiempo de estancia
         val horas = tiempoMinutos / 60
         val minutos = tiempoMinutos % 60
@@ -104,8 +112,22 @@ class SalidaConfirmacionActivity : AppCompatActivity() {
         }
         binding.tvTiempoEstancia.text = tiempoTexto
 
-        // Monto pagado
+        // ⭐ Monto - VERDE si pagó, ROJO si no pagó
         binding.tvMonto.text = String.format("$%.2f", monto)
+
+        if (bitPaid == 1) {
+            // PAGADO - Verde
+            binding.cardMonto.setCardBackgroundColor(getColor(android.R.color.holo_green_dark))
+            binding.tvTituloMonto.text = "MONTO PAGADO"
+        } else {
+            // NO PAGADO - Rojo
+            binding.cardMonto.setCardBackgroundColor(getColor(android.R.color.holo_red_dark))
+            binding.tvTituloMonto.text = "⚠️ NO HA PAGADO"
+
+            // ⭐ Deshabilitar botón VALIDAR
+            binding.btnConfirmar.isEnabled = false
+            binding.btnConfirmar.alpha = 0.5f
+        }
     }
 
     private fun confirmarSalida() {

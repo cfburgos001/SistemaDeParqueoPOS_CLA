@@ -273,6 +273,59 @@ class VehiculoRepository(private val context: Context) {
     }
 
     /**
+     * Calcula el monto a pagar según las reglas de negocio
+     */
+    suspend fun calcularMonto(placa: String): CalculoMontoResult {
+        return withContext(Dispatchers.IO) {
+            var connection: Connection? = null
+            try {
+                connection = dbHelper.getConnection()
+
+                if (connection == null) {
+                    return@withContext CalculoMontoResult.Error("No se pudo conectar a la base de datos")
+                }
+
+                val sql = "{CALL dbo.IOT_sp_CalcularMonto(?)}"
+                val callableStatement = connection.prepareCall(sql)
+                callableStatement.setString(1, placa)
+
+                val resultSet = callableStatement.executeQuery()
+
+                if (resultSet.next()) {
+                    val calculoMonto = CalculoMonto(
+                        tiempoTotalMinutos = resultSet.getInt("TiempoTotalMinutos"),
+                        tiempoCobrableMinutos = resultSet.getInt("TiempoCobrableMinutos"),
+                        montoCalculado = resultSet.getDouble("MontoCalculado"),
+                        precioPorHora = resultSet.getDouble("PrecioPorHora"),
+                        precioMinimo = resultSet.getDouble("PrecioMinimo"),
+                        yaPago = resultSet.getBoolean("YaPago"),
+                        estadoCobro = resultSet.getString("EstadoCobro")
+                    )
+
+                    resultSet.close()
+                    callableStatement.close()
+
+                    Log.d(TAG, "✓ Monto calculado: ${calculoMonto.montoCalculado} - Estado: ${calculoMonto.estadoCobro}")
+                    CalculoMontoResult.Success(calculoMonto)
+                } else {
+                    resultSet.close()
+                    callableStatement.close()
+                    CalculoMontoResult.Error("No se pudo calcular el monto")
+                }
+
+            } catch (e: SQLException) {
+                Log.e(TAG, "Error SQL al calcular monto", e)
+                CalculoMontoResult.Error("Error SQL: ${e.message}")
+            } catch (e: Exception) {
+                Log.e(TAG, "Error al calcular monto", e)
+                CalculoMontoResult.Error("Error: ${e.message}")
+            } finally {
+                dbHelper.closeConnection(connection)
+            }
+        }
+    }
+
+    /**
      * Incrementa el contador de reimpresiones (bitCopy)
      */
     suspend fun incrementarBitCopy(codigoBarras: String): DatabaseResult {
@@ -383,6 +436,19 @@ data class VehiculoDB(
 }
 
 /**
+ * Clase de datos para cálculo de monto
+ */
+data class CalculoMonto(
+    val tiempoTotalMinutos: Int,
+    val tiempoCobrableMinutos: Int,
+    val montoCalculado: Double,
+    val precioPorHora: Double,
+    val precioMinimo: Double,
+    val yaPago: Boolean,
+    val estadoCobro: String // GRACIA_ENTRADA, GRACIA_SALIDA, DEBE_PAGAR, GRATIS
+)
+
+/**
  * Clase de datos para tarifa
  */
 data class Tarifa(
@@ -396,6 +462,14 @@ data class Tarifa(
 sealed class DatabaseResult {
     data class Success(val message: String) : DatabaseResult()
     data class Error(val message: String) : DatabaseResult()
+}
+
+/**
+ * Resultado de cálculo de monto
+ */
+sealed class CalculoMontoResult {
+    data class Success(val calculo: CalculoMonto) : CalculoMontoResult()
+    data class Error(val message: String) : CalculoMontoResult()
 }
 
 /**

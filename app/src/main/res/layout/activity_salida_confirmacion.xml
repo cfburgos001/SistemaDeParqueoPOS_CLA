@@ -103,12 +103,36 @@
                             android:textColor="#212121"/>
                     </LinearLayout>
 
-                    <!-- Tiempo de Estancia -->
+                    <!-- ⭐ NUEVO: Hora de Pago -->
                     <LinearLayout
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:orientation="horizontal"
                         android:layout_marginBottom="12dp">
+
+                        <TextView
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:text="Hora de Pago:"
+                            android:textSize="16sp"
+                            android:textColor="#757575"/>
+
+                        <TextView
+                            android:id="@+id/tvHoraPago"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="04/11/2025 16:00"
+                            android:textSize="16sp"
+                            android:textStyle="bold"
+                            android:textColor="#4CAF50"/>
+                    </LinearLayout>
+
+                    <!-- Tiempo de Estancia -->
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal">
 
                         <TextView
                             android:layout_width="0dp"
@@ -127,35 +151,12 @@
                             android:textStyle="bold"
                             android:textColor="#212121"/>
                     </LinearLayout>
-
-                    <!-- ⭐ NUEVO: Pagado en -->
-                    <LinearLayout
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:orientation="horizontal">
-
-                        <TextView
-                            android:layout_width="0dp"
-                            android:layout_height="wrap_content"
-                            android:layout_weight="1"
-                            android:text="Pagado en:"
-                            android:textSize="16sp"
-                            android:textColor="#757575"/>
-
-                        <TextView
-                            android:id="@+id/tvLugarPago"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:text="PayStation"
-                            android:textSize="16sp"
-                            android:textStyle="bold"
-                            android:textColor="#4CAF50"/>
-                    </LinearLayout>
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
 
-            <!-- Card de Monto PAGADO -->
+            <!-- Card de Monto PAGADO / NO PAGADO -->
             <com.google.android.material.card.MaterialCardView
+                android:id="@+id/cardMonto"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 app:cardCornerRadius="16dp"
@@ -170,6 +171,7 @@
                     android:gravity="center">
 
                     <TextView
+                        android:id="@+id/tvTituloMonto"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:text="MONTO PAGADO"

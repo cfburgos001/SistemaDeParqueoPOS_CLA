@@ -143,22 +143,34 @@ class SalidaVehiculoActivity : AppCompatActivity() {
     }
 
     private fun procesarVehiculo(vehiculo: VehiculoDB) {
+        android.util.Log.d("SalidaVehiculo", "=== DATOS DEL VEHÍCULO ===")
         android.util.Log.d("SalidaVehiculo", "Placa: ${vehiculo.placa}")
         android.util.Log.d("SalidaVehiculo", "bitPaid: ${vehiculo.bitPaid}")
-
         android.util.Log.d("SalidaVehiculo", "Monto: ${vehiculo.monto}")
-        android.util.Log.d("SalidaVehiculo", "estaPagado: ${vehiculo.estaPagado()}")
+        android.util.Log.d("SalidaVehiculo", "========================")
 
-        if (!vehiculo.estaPagado()) {
+        // ⭐ SOLO VERIFICAR bitPaid - No calcular nada
+        if (vehiculo.bitPaid != 1) {
+            // NO HA PAGADO - Mostrar alerta
             mostrarAlertaNoPagado(vehiculo)
+            binding.btnRegistrarPorPlaca.isEnabled = true
             return
         }
 
+        // YA PAGÓ (bitPaid == 1) - Proceder a confirmación
         abrirConfirmacionSalida(vehiculo)
     }
 
     private fun mostrarAlertaNoPagado(vehiculo: VehiculoDB) {
-        val mensaje = crearMensajeNoPagado(vehiculo)
+        val mensaje = buildString {
+            append("⚠️ PAGO PENDIENTE\n\n")
+            append("Este vehículo NO ha pagado el ticket.\n\n")
+            append("📋 Información:\n")
+            append("Placa: ${vehiculo.placa}\n")
+            append("Monto en BD: $${String.format("%.2f", vehiculo.monto)}\n")
+            append("Estado bitPaid: ${vehiculo.bitPaid}\n\n")
+            append("❌ El cliente debe ir a PayStation para pagar antes de salir.")
+        }
 
         AlertDialog.Builder(this)
             .setTitle("Pago Pendiente")
@@ -166,51 +178,28 @@ class SalidaVehiculoActivity : AppCompatActivity() {
             .setPositiveButton("Entendido") { dialog, _ ->
                 dialog.dismiss()
                 binding.etPlaca.text?.clear()
-                binding.btnRegistrarPorPlaca.isEnabled = true
             }
             .setCancelable(false)
             .show()
     }
 
-    private fun crearMensajeNoPagado(vehiculo: VehiculoDB): String {
-        val sb = StringBuilder()
-        sb.append("Este vehiculo NO ha pagado el ticket.\n\n")
-        sb.append("Placa: ${vehiculo.placa}\n")
-        sb.append("Monto: $${String.format("%.2f", vehiculo.monto)}\n")
-        sb.append("Estado bitPaid: ${if (vehiculo.bitPaid == 1) "1" else "0"}\n\n")
-
-        if (vehiculo.monto <= 0) {
-            sb.append("DEBUG INFO:\n")
-            sb.append("- ID: ${vehiculo.id}\n")
-            sb.append("- Codigo: ${vehiculo.codigoBarras}\n")
-            sb.append("- bitPaid: ${vehiculo.bitPaid}\n")
-            sb.append("- Monto: ${vehiculo.monto}\n\n")
-        }
-
-        sb.append("El cliente debe ir a PayStation para pagar antes de salir.")
-        return sb.toString()
-    }
-
     private fun abrirConfirmacionSalida(vehiculo: VehiculoDB) {
-        lifecycleScope.launch {
-            val ahora = Date()
-            val tiempoMinutos = ((ahora.time - vehiculo.fechaEntrada.time) / 60000).toInt()
+        val ahora = Date()
+        val tiempoMinutos = ((ahora.time - vehiculo.fechaEntrada.time) / 60000).toInt()
 
-            val intent = Intent(this@SalidaVehiculoActivity, SalidaConfirmacionActivity::class.java)
-            intent.putExtra("VEHICULO_ID", vehiculo.id)
-            intent.putExtra("VEHICULO_PLACA", vehiculo.placa)
-            intent.putExtra("VEHICULO_FECHA", vehiculo.fechaEntrada.time)
-            intent.putExtra("VEHICULO_CODIGO", vehiculo.codigoBarras)
-            intent.putExtra("TIEMPO_MINUTOS", tiempoMinutos)
-            intent.putExtra("MONTO", vehiculo.monto)
-            intent.putExtra("FECHA_PAGO", vehiculo.fechaPago?.time ?: 0L)
-            intent.putExtra("BIT_PAID", vehiculo.bitPaid)
+        val intent = Intent(this, SalidaConfirmacionActivity::class.java)
+        intent.putExtra("VEHICULO_ID", vehiculo.id)
+        intent.putExtra("VEHICULO_PLACA", vehiculo.placa)
+        intent.putExtra("VEHICULO_FECHA", vehiculo.fechaEntrada.time)
+        intent.putExtra("VEHICULO_CODIGO", vehiculo.codigoBarras)
+        intent.putExtra("TIEMPO_MINUTOS", tiempoMinutos)
+        intent.putExtra("MONTO", vehiculo.monto)
+        intent.putExtra("FECHA_PAGO", vehiculo.fechaPago?.time ?: 0L)
+        intent.putExtra("BIT_PAID", vehiculo.bitPaid)
+        intent.putExtra("TIEMPO_ESTANCIA", vehiculo.tiempoEstancia)
 
-            intent.putExtra("TIEMPO_ESTANCIA", vehiculo.tiempoEstancia) // ⭐ AQUÍ se pasa TiempoEstancia
-            startActivityForResult(intent, REQUEST_CODE_CONFIRMACION)
-
-            binding.btnRegistrarPorPlaca.isEnabled = true
-        }
+        startActivityForResult(intent, REQUEST_CODE_CONFIRMACION)
+        binding.btnRegistrarPorPlaca.isEnabled = true
     }
 
     private fun iniciarEscaner() {
