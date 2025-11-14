@@ -166,7 +166,7 @@ class IngresoVehiculoActivity : AppCompatActivity() {
     }
 
     /**
-     * ⭐ NUEVA FUNCIÓN: Reimprime el último ticket
+     * ⭐ NUEVA FUNCIÓN: Reimprime el último ticket e incrementa bitCopy
      */
     private fun reimprimirUltimoTicket() {
         if (ultimoTicketImpreso == null) {
@@ -178,19 +178,38 @@ class IngresoVehiculoActivity : AppCompatActivity() {
             return
         }
 
-        Toast.makeText(
-            this,
-            "🖨️ Reimprimiendo ticket...",
-            Toast.LENGTH_SHORT
-        ).show()
+        binding.btnReimprimir.isEnabled = false
 
-        printReceipt(ultimoTicketImpreso!!)
+        lifecycleScope.launch {
+            // 1. Incrementar bitCopy en la BD
+            val result = vehiculoRepository.incrementarBitCopy(ultimoTicketImpreso!!.uniqueId)
 
-        Toast.makeText(
-            this,
-            "✓ Ticket reimpreso",
-            Toast.LENGTH_SHORT
-        ).show()
+            when (result) {
+                is DatabaseResult.Success -> {
+                    // 2. Imprimir el ticket
+                    printReceipt(ultimoTicketImpreso!!)
+
+                    // 3. Mostrar mensaje con número de reimpresiones
+                    Toast.makeText(
+                        this@IngresoVehiculoActivity,
+                        "✓ Ticket reimpreso\n${result.message}",
+                        Toast.LENGTH_SHORT
+                    ).show()
+                }
+                is DatabaseResult.Error -> {
+                    // Si falla la BD, igual imprimir pero avisar
+                    printReceipt(ultimoTicketImpreso!!)
+
+                    Toast.makeText(
+                        this@IngresoVehiculoActivity,
+                        "⚠ Ticket reimpreso\n(No se actualizó contador: ${result.message})",
+                        Toast.LENGTH_LONG
+                    ).show()
+                }
+            }
+
+            binding.btnReimprimir.isEnabled = true
+        }
     }
 
     private fun generateUniqueId(): String {

@@ -72,7 +72,6 @@ class VehiculoRepository(private val context: Context) {
 
     /**
      * Busca un vehículo por placa en IOT_Vehiculos
-     * INCLUYE: bitPaid, bitpaid, TiempoEstancia
      */
     suspend fun buscarVehiculoPorPlaca(placa: String): VehiculoResult {
         return withContext(Dispatchers.IO) {
@@ -92,7 +91,6 @@ class VehiculoRepository(private val context: Context) {
                         CodigoBarras, 
                         Estado,
                         ISNULL(bitPaid, 0) as bitPaid,
-                        ISNULL(bitpaid, 0) as bitpaid,
                         FechaPago,
                         ISNULL(Monto, 0.0) as Monto,
                         ISNULL(strRateKey, 'A') as strRateKey,
@@ -115,7 +113,6 @@ class VehiculoRepository(private val context: Context) {
                         codigoBarras = resultSet.getString("CodigoBarras"),
                         estado = resultSet.getString("Estado"),
                         bitPaid = resultSet.getInt("bitPaid"),
-                        bitpaid = resultSet.getInt("bitpaid"),
                         fechaPago = resultSet.getTimestamp("FechaPago"),
                         monto = resultSet.getBigDecimal("Monto")?.toDouble() ?: 0.0,
                         strRateKey = resultSet.getString("strRateKey") ?: "A",
@@ -125,7 +122,7 @@ class VehiculoRepository(private val context: Context) {
                     resultSet.close()
                     preparedStatement.close()
 
-                    Log.d(TAG, "✓ Vehículo encontrado: ${vehiculo.placa} - bitPaid: ${vehiculo.bitPaid} - bitpaid: ${vehiculo.bitpaid} - Monto: ${vehiculo.monto}")
+                    Log.d(TAG, "✓ Vehículo encontrado: ${vehiculo.placa} - bitPaid: ${vehiculo.bitPaid} - Monto: ${vehiculo.monto}")
                     VehiculoResult.Found(vehiculo)
                 } else {
                     resultSet.close()
@@ -149,7 +146,6 @@ class VehiculoRepository(private val context: Context) {
 
     /**
      * Busca un vehículo por código de barras
-     * INCLUYE: bitPaid, bitpaid, TiempoEstancia
      */
     suspend fun buscarVehiculoPorCodigo(codigo: String): VehiculoResult {
         return withContext(Dispatchers.IO) {
@@ -169,7 +165,6 @@ class VehiculoRepository(private val context: Context) {
                         CodigoBarras, 
                         Estado,
                         ISNULL(bitPaid, 0) as bitPaid,
-                        ISNULL(bitpaid, 0) as bitpaid,
                         FechaPago,
                         ISNULL(Monto, 0.0) as Monto,
                         ISNULL(strRateKey, 'A') as strRateKey,
@@ -192,7 +187,6 @@ class VehiculoRepository(private val context: Context) {
                         codigoBarras = resultSet.getString("CodigoBarras"),
                         estado = resultSet.getString("Estado"),
                         bitPaid = resultSet.getInt("bitPaid"),
-                        bitpaid = resultSet.getInt("bitpaid"),
                         fechaPago = resultSet.getTimestamp("FechaPago"),
                         monto = resultSet.getBigDecimal("Monto")?.toDouble() ?: 0.0,
                         strRateKey = resultSet.getString("strRateKey") ?: "A",
@@ -202,7 +196,7 @@ class VehiculoRepository(private val context: Context) {
                     resultSet.close()
                     preparedStatement.close()
 
-                    Log.d(TAG, "✓ Vehículo encontrado por código: ${vehiculo.placa} - bitpaid: ${vehiculo.bitpaid}")
+                    Log.d(TAG, "✓ Vehículo encontrado por código: ${vehiculo.placa}")
                     VehiculoResult.Found(vehiculo)
                 } else {
                     resultSet.close()
@@ -279,6 +273,48 @@ class VehiculoRepository(private val context: Context) {
     }
 
     /**
+     * Incrementa el contador de reimpresiones (bitCopy)
+     */
+    suspend fun incrementarBitCopy(codigoBarras: String): DatabaseResult {
+        return withContext(Dispatchers.IO) {
+            var connection: Connection? = null
+            try {
+                connection = dbHelper.getConnection()
+
+                if (connection == null) {
+                    return@withContext DatabaseResult.Error("No se pudo conectar a la base de datos")
+                }
+
+                val sql = "{CALL dbo.IOT_sp_IncrementarBitCopy(?)}"
+                val callableStatement = connection.prepareCall(sql)
+                callableStatement.setString(1, codigoBarras)
+
+                val resultSet = callableStatement.executeQuery()
+
+                var nuevoBitCopy = 0
+                if (resultSet.next()) {
+                    nuevoBitCopy = resultSet.getInt("NuevoBitCopy")
+                }
+
+                resultSet.close()
+                callableStatement.close()
+
+                Log.d(TAG, "✓ bitCopy incrementado - Código: $codigoBarras, Nuevo valor: $nuevoBitCopy")
+                DatabaseResult.Success("Reimpresiones: $nuevoBitCopy")
+
+            } catch (e: SQLException) {
+                Log.e(TAG, "Error SQL al incrementar bitCopy", e)
+                DatabaseResult.Error("Error SQL: ${e.message}")
+            } catch (e: Exception) {
+                Log.e(TAG, "Error al incrementar bitCopy", e)
+                DatabaseResult.Error("Error: ${e.message}")
+            } finally {
+                dbHelper.closeConnection(connection)
+            }
+        }
+    }
+
+    /**
      * Obtiene la tarifa actual de IOT_Tarifas
      */
     suspend fun obtenerTarifa(): TarifaResult {
@@ -329,7 +365,6 @@ class VehiculoRepository(private val context: Context) {
 
 /**
  * Clase de datos para vehículo en BD
- * INCLUYE: bitpaid, tiempoEstancia
  */
 data class VehiculoDB(
     val id: Int,
@@ -338,7 +373,6 @@ data class VehiculoDB(
     val codigoBarras: String,
     val estado: String,
     val bitPaid: Int = 0,
-    val bitpaid: Int = 0, // Dónde se pagó
     val fechaPago: Date? = null,
     val monto: Double = 0.0,
     val strRateKey: String = "A",
@@ -346,15 +380,6 @@ data class VehiculoDB(
 ) {
     fun estaPagado(): Boolean = bitPaid == 1 && monto > 0.0
     fun tieneMontoRegistrado(): Boolean = monto > 0.0
-
-    fun getLugarPago(): String {
-        return when (bitpaid) {
-            1 -> "PayStation"
-            2 -> "App Móvil"
-            3 -> "Web"
-            else -> "No especificado"
-        }
-    }
 }
 
 /**
